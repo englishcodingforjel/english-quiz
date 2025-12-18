@@ -1,168 +1,52 @@
-/**
- * @fileoverview 英単語クイズアプリケーション用スタイルシート
- * 変数（CSS Custom Properties）によるテーマ管理と、レスポンシブなカードUIを定義します。
- */
-
-/* -------------------------------------------------------------------------- */
-/* 1. デザインシステム変数定義                                                 */
-/* -------------------------------------------------------------------------- */
 :root {
-    /* カラーパレット（ライトモード） */
-    --bg: #f8fafc;
-    --card: #ffffff;
-    --border: #e2e8f0;
-    --text: #1e293b;
-    --text-muted: #64748b;
-    --blue: #4a90e2;
-    --green: #48bb78;
-    --red: #f56565;
-    
-    /* クイズ進捗・タイマー用 */
-    --progress-bg: #e2e8f0;
-    --timer-fill: #f56565;
+    --bg: #f8fafc; --card: #ffffff; --border: #e2e8f0; --text: #1e293b; --text-muted: #64748b;
+    --blue: #4a90e2; --green: #48bb78; --red: #f56565;
+    --progress-bg: #e2e8f0; --timer-fill: #f56565;
 }
-
-/* -------------------------------------------------------------------------- */
-/* 2. ダークモード                                                            */
-/* -------------------------------------------------------------------------- */
 body.dark-mode {
-    --bg: #0f172a;
-    --card: #1e293b;
-    --border: #334155;
-    --text: #f1f5f9;
-    --blue: #3b82f6;
-    --text-muted: #94a3b8;
+    --bg: #0f172a; --card: #1e293b; --border: #334155; --text: #f1f5f9; --blue: #3b82f6; --text-muted: #94a3b8;
 }
-
-/* -------------------------------------------------------------------------- */
-/* 3. 基本リセット & 共通スタイル                                               */
-/* -------------------------------------------------------------------------- */
-* { 
-    box-sizing: border-box; 
-    -webkit-tap-highlight-color: transparent; /* モバイルのタップ青枠を消す */
-}
-
-body { 
-    margin: 0; 
-    font-family: system-ui, -apple-system, sans-serif; 
-    background-color: var(--bg); 
-    color: var(--text); 
-    overscroll-behavior-y: none; /* スワイプによるリロードを防止 */
-}
-
-/* クイズ中の画面固定 */
-body.scroll-lock { 
-    overflow: hidden; 
-    position: fixed; 
-    width: 100%; 
-    height: 100%; 
-}
-
-/* -------------------------------------------------------------------------- */
-/* 4. レイアウトコンポーネント                                                */
-/* -------------------------------------------------------------------------- */
-
-/* ヘッダーバー */
-.topbar { 
-    display: flex; 
-    justify-content: space-between; 
-    align-items: center; 
-    padding: 8px 15px; 
-    background: var(--blue); 
-    color: white; 
-}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+body { margin: 0; font-family: system-ui, sans-serif; background-color: var(--bg); color: var(--text); overscroll-behavior-y: none; }
+body.scroll-lock { overflow: hidden; position: fixed; width: 100%; height: 100%; }
+.topbar { display: flex; justify-content: space-between; align-items: center; padding: 8px 15px; background: var(--blue); color: white; }
 .topbar h1 { margin: 0; font-size: 0.95rem; font-weight: 800; }
 .topbar-right { display: flex; align-items: center; gap: 10px; font-size: 0.85rem; font-weight: bold; }
-
-/* 進捗インジケーター（ドット） */
-.progress-container { 
-    width: 100%; 
-    background: var(--bg); 
-    position: sticky; 
-    top: 0; 
-    z-index: 10; 
-    border-bottom: 1px solid var(--border); 
-}
+.theme-btn { background: rgba(255,255,255,0.2); border: none; font-size: 1rem; cursor: pointer; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; }
+.progress-container { width: 100%; background: var(--bg); position: sticky; top: 0; z-index: 10; border-bottom: 1px solid var(--border); }
 .dot-progress { display: flex; justify-content: center; gap: 3px; padding: 5px; flex-wrap: wrap; }
-.dot { width: 10px; height: 10px; border-radius: 2px; background: var(--progress-bg); transition: background 0.2s; }
-.dot.correct { background: var(--green); } 
-.dot.wrong { background: var(--red); }
+.dot { width: 10px; height: 10px; border-radius: 2px; background: var(--progress-bg); }
+.dot.correct { background: var(--green); } .dot.wrong { background: var(--red); }
 .dot.current { border: 1.5px solid var(--blue); transform: scale(1.1); }
-
-/* タイマーバー */
 .timer-container { height: 3px; width: 100%; background: rgba(0,0,0,0.05); }
 .timer-bar { height: 100%; background: var(--timer-fill); width: 100%; }
-
-/* メインコンテンツエリア */
-.container { 
-    max-width: 500px; 
-    margin: 0 auto; 
-    padding: 10px; 
-    min-height: calc(100vh - 50px); 
-    display: flex; 
-    flex-direction: column; 
-}
-
-/* 各セクションのカード */
-.card { 
-    width: 100%; 
-    background: var(--card); 
-    border-radius: 16px; 
-    padding: 15px; 
-    box-shadow: 0 4px 12px rgba(0,0,0,0.05); 
-    text-align: center; 
-    margin-bottom: 10px;
-}
-
-/* -------------------------------------------------------------------------- */
-/* 5. UIパーツ                                                               */
-/* -------------------------------------------------------------------------- */
-
-/* モード選択の2列グリッド */
+.container { max-width: 500px; margin: 0 auto; padding: 10px; min-height: calc(100vh - 50px); display: flex; flex-direction: column; }
+.card { width: 100%; background: var(--card); border-radius: 16px; padding: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); text-align: center; margin-bottom: 10px;}
 .mode-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; width: 100%; margin-top: 10px; }
 .mode-card { height: 100px; display: flex; flex-direction: column; justify-content: center; align-items: center; font-size: 1rem; border-radius: 15px; }
 .mode-icon { font-size: 1.8rem; margin-bottom: 4px; }
-
-/* フォーム・ボタン */
+.disabled-mode { opacity: 0.5; cursor: not-allowed; background: var(--border) !important; color: var(--text-muted) !important; }
+.hidden { display: none !important; }
+.weak-setting-box { width: 100%; background: rgba(0,0,0,0.03); padding: 8px; border-radius: 10px; margin-bottom: 5px; }
+.weak-mode-label { display: flex; align-items: center; justify-content: center; gap: 5px; font-weight: bold; cursor: pointer; font-size: 0.85rem; }
+.label { width: 100%; display: block; margin-top: 8px; margin-bottom: 2px; font-weight: bold; font-size: 0.75rem; text-align: left; }
 .select { width: 100%; padding: 8px; border-radius: 8px; border: 1.5px solid var(--border); background: var(--card); color: var(--text); font-size: 0.9rem; margin-bottom: 4px; }
-.primary, .secondary { width: 100%; padding: 10px; border: none; border-radius: 10px; font-size: 0.9rem; font-weight: bold; cursor: pointer; transition: opacity 0.2s; }
+.rangeRow { width: 100%; display: flex; gap: 6px; }
+.primary, .secondary { width: 100%; padding: 10px; border: none; border-radius: 10px; font-size: 0.9rem; font-weight: bold; cursor: pointer; }
 .primary { background: var(--blue); color: white; margin-top: 10px; }
 .secondary { background: transparent; color: var(--text); border: 1.5px solid var(--border); margin-top: 4px; }
-
-/* クイズ問題文 */
-.question { 
-    width: 100%; 
-    text-align: center; 
-    font-size: clamp(1.8rem, 8vw, 2.4rem); /* 画面幅に合わせてフォントサイズを動的に変更 */
-    font-weight: 900; 
-    color: var(--blue); 
-    margin: 10px 0; 
-    min-height: 1.2em; 
-}
-
-/* クイズ選択肢の2x2グリッド */
+.secondary.small { padding: 4px; font-size: 0.75rem; border-radius: 6px; }
+.danger { color: var(--red); border-color: var(--red); }
+.guide-box { margin-top: 15px; padding: 10px; background: rgba(0, 0, 0, 0.03); border-radius: 12px; text-align: left; font-size: 0.7rem; line-height: 1.4; }
+.guide-box h4 { margin: 8px 0 4px 0; }
+.caution-text { margin-top: 8px; font-weight: bold; color: var(--red); border-top: 1px dashed var(--border); padding-top: 5px; }
+.question { width: 100%; text-align: center; font-size: clamp(1.8rem, 8vw, 2.4rem); font-weight: 900; color: var(--blue); margin: 10px 0; min-height: 1.2em; }
 .grid2x2 { width: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-.choice { 
-    height: clamp(55px, 10vh, 75px); 
-    background: var(--card); 
-    border: 1.5px solid var(--border); 
-    border-radius: 12px; 
-    color: var(--text); 
-    font-size: 0.85rem; 
-    font-weight: bold; 
-    display: flex; 
-    align-items: center; 
-    justify-content: center; 
-    padding: 5px; 
-}
-
-/* 正誤アニメーション用 */
+.choice { height: clamp(55px, 10vh, 75px); background: var(--card); border: 1.5px solid var(--border); border-radius: 12px; color: var(--text); font-size: 0.85rem; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 5px; }
 .choice.correct { background: var(--green) !important; color: white !important; border-color: var(--green) !important; }
 .choice.wrong { background: var(--red) !important; color: white !important; border-color: var(--red) !important; }
-
-/* -------------------------------------------------------------------------- */
-/* 6. ユーティリティ & モーダル                                                */
-/* -------------------------------------------------------------------------- */
-.hidden { display: none !important; }
+#wrongList { list-style: none; padding: 0; }
+#wrongList li { background: rgba(245, 101, 101, 0.1); margin-bottom: 6px; padding: 10px; border-radius: 10px; border-left: 4px solid var(--red); text-align: left; font-size: 0.85rem; }
 .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 1000; display: flex; align-items: center; justify-content: center; }
-.modal-content { width: 92%; max-height: 85vh; padding: 20px; overflow-y: auto; }
+.modal-content { width: 92%; max-height: 85vh; padding: 20px; position: relative; }
+.close-btn { position: absolute; top: 5px; right: 10px; border: none; background: none; font-size: 1.8rem; color: var(--text); cursor: pointer; }
