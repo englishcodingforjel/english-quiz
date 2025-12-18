@@ -19,7 +19,7 @@ let allEntries = [], quizEntries = [], currentIndex = 0, correctCount = 0,
     wrongAnswers = [], currentChoicesData = [], answered = false, 
     timerInterval = null, timeLimit = 0, csvCache = {};
 
-// ダークモード
+// ダークモード制御
 const themeToggle = document.getElementById("themeToggle");
 themeToggle.onclick = () => {
     document.body.classList.toggle("dark-mode");
@@ -227,7 +227,7 @@ document.getElementById("closeWeakListBtn").onclick = () => { window.speechSynth
 document.getElementById("clearHistoryBtn").onclick = () => { if(confirm("履歴を削除？")) { localStorage.removeItem("weakWords"); updateWeakCountDisplay(); } };
 document.getElementById("questionWord").onclick = () => { if(quizEntries[currentIndex]) speak(quizEntries[currentIndex].english); };
 
-// 【修正】戻るボタンは単語設定（menu）画面へ
+// 戻るボタン遷移
 document.getElementById("backBtn").onclick = () => { window.speechSynthesis.cancel(); clearInterval(timerInterval); showView("menu"); };
 document.getElementById("restartBtn").onclick = () => { window.speechSynthesis.cancel(); showView("menu"); };
 
