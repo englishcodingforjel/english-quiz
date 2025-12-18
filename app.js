@@ -1,5 +1,11 @@
+/**
+ * @fileoverview 英単語クイズアプリケーションのメインロジック
+ * 各画面の遷移、CSVデータの非同期読み込み、クイズの進行管理を行います。
+ */
+
 "use strict";
 
+/** @type {Object<string, HTMLElement>} 画面要素のコレクション */
 const views = {
     password: document.getElementById("passwordView"),
     modeSelection: document.getElementById("modeSelectionView"),
@@ -15,11 +21,25 @@ const topScore = document.getElementById("topScore"),
       nextBtn = document.getElementById("nextBtn"), 
       PASSWORD = "tkg";
 
-let allEntries = [], quizEntries = [], currentIndex = 0, correctCount = 0, 
-    wrongAnswers = [], currentChoicesData = [], answered = false, 
-    timerInterval = null, timeLimit = 0, csvCache = {};
+/** @type {Array<Object>} 読み込まれた全単語データ */
+let allEntries = [];
+/** @type {Array<Object>} 現在のクイズセッションで使用する単語 */
+let quizEntries = [];
+let currentIndex = 0;
+let correctCount = 0;
+/** @type {Array<Object>} 間違えた単語のリスト */
+let wrongAnswers = [];
+/** @type {Array<Object>} 現在の問題の選択肢（正解+不正解） */
+let currentChoicesData = [];
+let answered = false;
+let timerInterval = null;
+let timeLimit = 0;
+/** @type {Object<string, Array>} ファイル名をキーとしたCSVデータのキャッシュ */
+let csvCache = {};
 
-// ダークモード制御
+/**
+ * ダークモードの切り替えと設定の保存
+ */
 const themeToggle = document.getElementById("themeToggle");
 themeToggle.onclick = () => {
     document.body.classList.toggle("dark-mode");
@@ -28,6 +48,10 @@ themeToggle.onclick = () => {
 };
 if(localStorage.getItem("theme") === "dark") { document.body.classList.add("dark-mode"); themeToggle.textContent = "☀️"; }
 
+/**
+ * 指定したビュー（画面）を表示し、他を非表示にする
+ * @param {string} name - viewsオブジェクトのキー名
+ */
 function showView(name) {
     Object.keys(views).forEach(v => views[v].classList.add("hidden"));
     views[name].classList.remove("hidden");
@@ -36,6 +60,10 @@ function showView(name) {
     if (name === "menu") updateWeakCountDisplay();
 }
 
+/**
+ * テキストを読み上げる (Web Speech API)
+ * @param {string} text - 読み上げる英単語
+ */
 function speak(text) {
     if (!window.speechSynthesis) return;
     window.speechSynthesis.cancel();
@@ -51,6 +79,12 @@ function speak(text) {
 }
 if (window.speechSynthesis.onvoiceschanged !== undefined) window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
 
+/**
+ * CSVファイルを読み込み、オブジェクトの配列に変換する
+ * @param {string} fileName - CSVファイルパス
+ * @param {boolean} [forceRefresh=false] - キャッシュを無視して強制更新するか
+ * @returns {Promise<Array>} 単語データの配列
+ */
 async function loadCsv(fileName, forceRefresh = false) {
     if (csvCache[fileName] && !forceRefresh) return csvCache[fileName];
     const url = forceRefresh ? `${fileName}?v=${Date.now()}` : fileName;
@@ -71,6 +105,10 @@ async function loadCsv(fileName, forceRefresh = false) {
     } catch (e) { throw e; }
 }
 
+/**
+ * ユーザーの回答を判定し、UIを更新する
+ * @param {number} idx - クリックされた選択肢のインデックス（時間切れの場合は-1）
+ */
 function handleAnswer(idx) {
     if (answered) return;
     answered = true; clearInterval(timerInterval);
@@ -91,6 +129,9 @@ function handleAnswer(idx) {
     topScore.textContent = `正解: ${correctCount}`; nextBtn.disabled = false;
 }
 
+/**
+ * タイマーを開始する
+ */
 function startTimer() {
     clearInterval(timerInterval);
     if (timeLimit <= 0) return document.getElementById("timerBarContainer").classList.add("hidden");
@@ -103,6 +144,11 @@ function startTimer() {
     }, 50);
 }
 
+/**
+ * 現在の問題に対する4つの選択肢を作成する
+ * @param {Object} correctEntry - 正解の単語データ
+ * @returns {Array} シャッフルされた選択肢の配列
+ */
 function buildChoices(correctEntry) {
     const picks = [correctEntry];
     const usedIds = new Set([correctEntry.number]);
@@ -117,6 +163,9 @@ function buildChoices(correctEntry) {
     }).sort(() => 0.5 - Math.random());
 }
 
+/**
+ * 新しい問題を表示し、タイマーをリセットする
+ */
 function loadQuestion() {
     answered = false; nextBtn.disabled = true;
     const entry = quizEntries[currentIndex];
@@ -129,15 +178,20 @@ function loadQuestion() {
     speak(entry.english); startTimer();
 }
 
-// 画面遷移イベント
+/**
+ * イベントリスナーの設定
+ */
 document.getElementById("passwordBtn").onclick = () => {
     if (document.getElementById("passwordInput").value === PASSWORD) showView("modeSelection");
     else document.getElementById("passwordError").textContent = "パスワードが違います";
 };
 document.getElementById("selectVocabBtn").onclick = () => showView("menu");
-document.getElementById("selectGrammarBtn").onclick = () => alert("文法学習モードは現在準備中です。");
+document.getElementById("selectGrammarBtn").onclick = () => alert("文法は現在準備中です。");
 document.getElementById("backToModeBtn").onclick = () => showView("modeSelection");
 
+/**
+ * クイズ開始処理：設定の取得と単語のフィルタリングを行う
+ */
 document.getElementById("startBtn").onclick = async function() {
     const btn = this; if (btn.disabled) return;
     try {
@@ -173,6 +227,9 @@ document.getElementById("startBtn").onclick = async function() {
     } catch (e) { alert(e.message); btn.disabled = false; btn.textContent = "開始"; }
 };
 
+/**
+ * 強制更新処理：サーバーから最新のCSVを再取得する
+ */
 document.getElementById("forceUpdateBtn").onclick = async function() {
     const btn = this; const file = document.getElementById("difficultySelect").value;
     if (btn.disabled) return;
@@ -185,11 +242,14 @@ document.getElementById("forceUpdateBtn").onclick = async function() {
     } catch (e) { btn.textContent = "❌ 更新失敗"; setTimeout(() => { btn.disabled = false; btn.textContent = originalText; }, 1500); }
 };
 
+/**
+ * 次の問題、または結果画面へ遷移
+ */
 nextBtn.onclick = () => {
     currentIndex++;
     if (currentIndex >= quizEntries.length) {
         window.speechSynthesis.cancel(); showView("result");
-        document.getElementById("finalScore").textContent = `Score: ${correctCount} / ${quizEntries.length}`;
+        document.getElementById("finalScore").textContent = `結果: ${correctCount} / ${quizEntries.length}`;
         if (correctCount === quizEntries.length && quizEntries.length > 0) {
             confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
             document.getElementById("resultTitle").textContent = "✨全問正解✨";
@@ -202,13 +262,18 @@ nextBtn.onclick = () => {
     } else loadQuestion();
 };
 
+/** 苦手リストの表示数を更新 */
 function updateWeakCountDisplay() { document.getElementById("weakCount").textContent = JSON.parse(localStorage.getItem("weakWords") || "[]").length; }
+
+/** 苦手リストから特定の単語を削除 */
 window.removeWeak = (id) => {
     let weakIds = JSON.parse(localStorage.getItem("weakWords") || "[]").filter(wid => wid !== id);
     localStorage.setItem("weakWords", JSON.stringify(weakIds));
     updateWeakCountDisplay();
     if (!document.getElementById("weakListModal").classList.contains("hidden")) document.getElementById("openWeakListBtn").onclick();
 };
+
+/** 苦手リストモーダルを開く */
 document.getElementById("openWeakListBtn").onclick = () => {
     const weakIds = JSON.parse(localStorage.getItem("weakWords") || "[]"), listEl = document.getElementById("fullWeakList");
     listEl.innerHTML = "";
@@ -227,8 +292,8 @@ document.getElementById("closeWeakListBtn").onclick = () => { window.speechSynth
 document.getElementById("clearHistoryBtn").onclick = () => { if(confirm("履歴を削除？")) { localStorage.removeItem("weakWords"); updateWeakCountDisplay(); } };
 document.getElementById("questionWord").onclick = () => { if(quizEntries[currentIndex]) speak(quizEntries[currentIndex].english); };
 
-// 戻るボタン遷移
 document.getElementById("backBtn").onclick = () => { window.speechSynthesis.cancel(); clearInterval(timerInterval); showView("menu"); };
 document.getElementById("restartBtn").onclick = () => { window.speechSynthesis.cancel(); showView("menu"); };
 
+// 初期表示
 showView("password");
