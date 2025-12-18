@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="ja">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+    <meta name="robots" content="noindex,nofollow">
+    <title>英単語学習補助クイズ</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+</head>
+<body>
+    <header class="topbar">
+        <h1 id="topTitle">英単語クイズ</h1>
+        <div class="topbar-right">
+            <button id="themeToggle" class="theme-btn">🌙</button>
+            <div id="topScore"></div>
+        </div>
+    </header>
+
+    <div id="progressBarContainer" class="progress-container hidden">
+        <div id="dotProgress" class="dot-progress"></div>
+        <div id="timerBarContainer" class="timer-container">
+            <div id="timerBar" class="timer-bar"></div>
+        </div>
+    </div>
+
+    <main class="container">
+        <section id="passwordView" class="card">
+            <h3>アクセス制限</h3>
+            <input type="password" id="passwordInput" class="select" placeholder="パスワード">
+            <button id="passwordBtn" class="primary">ログイン</button>
+            <p id="passwordError" class="status errorText"></p>
+        </section>
+
+        <section id="modeSelectionView" class="card hidden">
+            <h3>学習モードを選択</h3>
+            <div class="mode-grid">
+                <button id="selectVocabBtn" class="primary mode-card">
+                    <span class="mode-icon">📖</span><br>単語学習
+                </button>
+                <button id="selectGrammarBtn" class="secondary mode-card disabled-mode">
+                    <span class="mode-icon">✍️</span><br>文法学習<br>
+                    <small>(準備中)</small>
+                </button>
+            </div>
+        </section>
+
+        <section id="menuView" class="card hidden">
+            <h3 style="margin:0 0 10px;">単語学習設定</h3>
+            <div class="weak-setting-box">
+                <label class="weak-mode-label">
+                    <input type="checkbox" id="weakModeCheck">
+                    <span>苦手モード</span>
+                </label>
+                <div class="rangeRow">
+                    <button id="openWeakListBtn" class="secondary small">一覧(<span id="weakCount">0</span>)</button>
+                    <button id="clearHistoryBtn" class="secondary danger small">履歴削除</button>
+                </div>
+            </div>
+
+            <label class="label">教材</label>
+            <select id="difficultySelect" class="select">
+                <option value="grit2500.csv" selected>GRIT 2500</option>
+                <option value="target1900.csv">ターゲット1900</option>
+                <option value="target1400.csv">ターゲット1400</option>
+            </select>
+
+            <div class="rangeBox">
+                <label class="label">範囲指定</label>
+                <div class="rangeRow">
+                    <input id="rangeStart" type="number" class="select" placeholder="開始番号">
+                    <input id="rangeEnd" type="number" class="select" placeholder="終了番号">
+                </div>
+            </div>
+
+            <div class="rangeRow">
+                <div style="flex:1;">
+                    <label class="label">出題数</label>
+                    <input id="countInput" type="number" class="select" value="20">
+                </div>
+                <div style="flex:1;">
+                    <label class="label">制限時間</label>
+                    <select id="timerSelect" class="select">
+                        <option value="0">なし</option>
+                        <option value="5">5秒</option>
+                        <option value="10" selected>10秒</option>
+                    </select>
+                </div>
+            </div>
+            
+            <button id="startBtn" class="primary">開始</button>
+
+            <div class="guide-box">
+                <h4 style="color:var(--red);">⚠️ ご利用にあたって</h4>
+                <p style="font-size: 0.75rem; color: var(--text-muted); line-height: 1.5; margin-bottom: 10px; text-align: left;">
+                    本アプリは『ターゲット1900』『ターゲット1400』等の公式アプリではありません。
+                    <strong>書籍を購入済みの生徒が、家庭学習の定着度を測るための補助ツール</strong>です。
+                    本アプリのみでの学習はできません。例文や詳細な解説等は一切含まれませんので、必ず書籍本体と併用してください。
+                </p>
+
+                <h4 style="border-top: 1px dashed var(--border); padding-top: 8px;">📖 使い方ガイド</h4>
+                <ul style="text-align: left; font-size: 0.75rem; color: var(--text-muted);">
+                    <li><strong>範囲指定：</strong> 学習した単語番号の範囲を入力してください。</li>
+                    <li><strong>出題数：</strong> 今回テストしたい問題数です。</li>
+                    <li><strong>制限時間：</strong> 解答までの時間です。0で不正解になります。</li>
+                </ul>
+                <p class="caution-text">⚠️ 画面が動かない場合は再読み込みしてください。</p>
+                
+                <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 10px;">
+                    <button id="forceUpdateBtn" class="secondary small">単語データを最新に更新する</button>
+                    <button id="backToModeBtn" class="secondary">学習モード選択へ戻る</button>
+                </div>
+            </div>
+        </section>
+
+        <section id="quizView" class="card hidden">
+            <div id="progressText" class="progress-info"></div>
+            <div id="questionWord" class="question"></div>
+            <div class="grid2x2" id="choicesGrid">
+                <button class="choice"></button><button class="choice"></button>
+                <button class="choice"></button><button class="choice"></button>
+            </div>
+            <div class="actions">
+                <button id="nextBtn" class="primary" disabled>次へ</button>
+                <button id="backBtn" class="secondary">戻る</button>
+            </div>
+        </section>
+
+        <section id="resultView" class="card hidden">
+            <h3 id="resultTitle">結果</h3>
+            <div id="finalScore" class="final-score"></div>
+            <div id="reviewSection" class="hidden" style="width:100%;">
+                <ul id="wrongList"></ul>
+            </div>
+            <button id="restartBtn" class="primary">単語設定へ</button>
+        </section>
+    </main>
+
+    <div id="weakListModal" class="modal hidden">
+        <div class="modal-content card">
+            <button id="closeWeakListBtn" class="close-btn">&times;</button>
+            <h3>苦手リスト</h3>
+            <ul id="fullWeakList" style="list-style:none; padding:0; text-align:left;"></ul>
+        </div>
+    </div>
+    <script src="app.js"></script>
+</body>
+</html>
