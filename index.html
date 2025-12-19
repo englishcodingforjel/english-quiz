@@ -35,12 +35,11 @@
         <section id="modeSelectionView" class="card hidden">
             <h3>モードを選択</h3>
             <div class="mode-grid">
-                <button id="selectVocabBtn" class="primary mode-card">
+                <button id="selectVocabBtn" class="mode-card">
                     <span class="mode-icon">📖</span><br>単語
                 </button>
-                <button id="selectGrammarBtn" class="secondary mode-card disabled-mode">
-                    <span class="mode-icon">✍️</span><br>文法<br>
-                    <small>(準備中)</small>
+                <button id="selectGrammarBtn" class="mode-card">
+                    <span class="mode-icon">✍️</span><br>文法
                 </button>
             </div>
         </section>
@@ -115,10 +114,17 @@
 
         <section id="quizView" class="card hidden">
             <div id="progressText" class="progress-info"></div>
-            <div id="questionWord" class="question"></div>
+            <div id="questionContainer" class="question-container">
+                <div id="questionWord" class="question"></div>
+                <div id="questionSource" class="question-source"></div>
+            </div>
             <div class="grid2x2" id="choicesGrid">
                 <button class="choice"></button><button class="choice"></button>
                 <button class="choice"></button><button class="choice"></button>
+            </div>
+            <div id="explanationBox" class="explanation-box hidden">
+                <div class="explanation-header">💡 解説</div>
+                <div id="explanationText" class="explanation-text"></div>
             </div>
             <div class="actions">
                 <button id="nextBtn" class="primary" disabled>次へ</button>
@@ -132,7 +138,96 @@
             <div id="reviewSection" class="hidden" style="width:100%;">
                 <ul id="wrongList"></ul>
             </div>
-            <button id="restartBtn" class="primary">単語設定へ</button>
+            <button id="restartBtn" class="primary">設定へ</button>
+        </section>
+
+        <!-- 文法用ビュー -->
+        <section id="grammarModeSelectionView" class="card hidden">
+            <h3>文法モードを選択</h3>
+            <div class="mode-grid">
+                <button id="selectGrammarProblemBtn" class="mode-card">
+                    <span class="mode-icon">📝</span><br>問題モード
+                </button>
+                <button id="selectGrammarStudyBtn" class="mode-card disabled-mode">
+                    <span class="mode-icon">📚</span><br>学習モード<br>
+                    <small>(準備中)</small>
+                </button>
+            </div>
+            <button id="backToMainModeBtn" class="secondary" style="margin-top: 15px;">戻る</button>
+        </section>
+
+        <section id="grammarTypeSelectionView" class="card hidden">
+            <h3>問題タイプを選択</h3>
+            <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 10px;">
+                <button id="selectFillBlankBtn" class="mode-card">
+                    <span class="mode-icon">✏️</span><br>空所補充
+                </button>
+                <button id="selectReorderBtn" class="mode-card disabled-mode">
+                    <span class="mode-icon">🔄</span><br>並び替え<br>
+                    <small>(準備中)</small>
+                </button>
+                <button id="selectErrorCorrectionBtn" class="mode-card disabled-mode">
+                    <span class="mode-icon">✓</span><br>正誤問題<br>
+                    <small>(準備中)</small>
+                </button>
+            </div>
+            <button id="backToGrammarModeBtn" class="secondary" style="margin-top: 15px;">戻る</button>
+        </section>
+
+        <section id="grammarFillCategoryView" class="card hidden">
+            <h3>項目を選択</h3>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px;">
+                <button class="grammar-category-btn mode-card" data-category="tense">
+                    <span class="mode-icon">⏰</span><br>時制
+                </button>
+                <button class="grammar-category-btn mode-card" data-category="passive">
+                    <span class="mode-icon">🔄</span><br>受動態
+                </button>
+                <button class="grammar-category-btn mode-card" data-category="modal">
+                    <span class="mode-icon">💪</span><br>助動詞
+                </button>
+                <button class="grammar-category-btn mode-card" data-category="infinitive">
+                    <span class="mode-icon">∞</span><br>不定詞
+                </button>
+                <button class="grammar-category-btn mode-card" data-category="gerund">
+                    <span class="mode-icon">📝</span><br>動名詞
+                </button>
+                <button class="grammar-category-btn mode-card" data-category="participle">
+                    <span class="mode-icon">✂️</span><br>分詞
+                </button>
+                <button class="grammar-category-btn mode-card" data-category="subjunctive">
+                    <span class="mode-icon">🎭</span><br>仮定法
+                </button>
+                <button class="grammar-category-btn mode-card" data-category="comparison">
+                    <span class="mode-icon">📊</span><br>比較
+                </button>
+                <button class="grammar-category-btn mode-card" data-category="relative">
+                    <span class="mode-icon">🔗</span><br>関係詞
+                </button>
+            </div>
+            <button id="backToGrammarTypeBtn" class="secondary" style="margin-top: 15px;">戻る</button>
+        </section>
+
+        <section id="grammarMenuView" class="card hidden">
+            <h3 style="margin:0 0 10px;">文法問題設定</h3>
+
+            <label class="label">難易度</label>
+            <select id="grammarDifficultySelect" class="select">
+                <option value="basic">基礎</option>
+                <option value="standard" selected>標準</option>
+                <option value="advanced">応用</option>
+            </select>
+
+            <label class="label">出題数</label>
+            <input id="grammarCountInput" type="number" inputmode="numeric" pattern="[0-9]*" class="select" value="20">
+            
+            <button id="grammarStartBtn" class="primary">開始</button>
+
+            <div class="guide-box">
+                <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 10px;">
+                    <button id="backToGrammarCategoryBtn" class="secondary">戻る</button>
+                </div>
+            </div>
         </section>
     </main>
 
