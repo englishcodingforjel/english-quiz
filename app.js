@@ -314,9 +314,6 @@ function loadQuestion() {
     const dot = document.getElementById(`dot-${currentIndex}`); if (dot) dot.classList.add("current");
     document.getElementById("progressText").textContent = `Q ${currentIndex + 1} / ${quizEntries.length}`;
     
-    // 強制的にリフローを発生させる
-    void choicesGrid.offsetHeight;
-    
     const questionContainer = document.getElementById("questionContainer");
     const questionSource = document.getElementById("questionSource");
     
@@ -344,25 +341,23 @@ function loadQuestion() {
         choicesGrid.style.opacity = "1";
         document.getElementById("timerBarContainer").classList.add("hidden");
     } else {
-        // 単語問題の表示（1フレーム待つ）
-        requestAnimationFrame(() => {
-            questionContainer.classList.remove("grammar-mode");
-            document.getElementById("questionWord").textContent = entry.english;
-            questionSource.textContent = "";
-            questionSource.style.display = "none";
-            currentChoicesData = buildChoices(entry);
-            choiceButtons.forEach((btn, i) => { 
-                btn.textContent = currentChoicesData[i].display; 
-                btn.className = "choice"; 
-                btn.disabled = false; 
-                btn.onclick = () => handleAnswer(i); 
-            });
-            // 選択肢を再表示
-            choicesGrid.style.visibility = "visible";
-            choicesGrid.style.opacity = "1";
-            speak(entry.english);
-            startTimer();
+        // 単語問題の表示（即座に表示、遅延なし）
+        questionContainer.classList.remove("grammar-mode");
+        document.getElementById("questionWord").textContent = entry.english;
+        questionSource.textContent = "";
+        questionSource.style.display = "none";
+        currentChoicesData = buildChoices(entry);
+        choiceButtons.forEach((btn, i) => { 
+            btn.textContent = currentChoicesData[i].display; 
+            btn.className = "choice"; 
+            btn.disabled = false; 
+            btn.onclick = () => handleAnswer(i); 
         });
+        // 選択肢を即座に表示
+        choicesGrid.style.visibility = "visible";
+        choicesGrid.style.opacity = "1";
+        speak(entry.english);
+        startTimer();
     }
 }
 
@@ -378,7 +373,7 @@ document.getElementById("passwordBtn").onclick = () => {
  * モード選択遷移
  */
 document.getElementById("selectVocabBtn").onclick = () => { isGrammarMode = false; showView("menu"); };
-document.getElementById("selectGrammarBtn").onclick = () => { isGrammarMode = true; showView("grammarModeSelection"); };
+document.getElementById("selectGrammarBtn").onclick = () => { alert("文法機能は現在準備中です。"); };
 document.getElementById("backToModeBtn").onclick = () => showView("modeSelection");
 
 // 文法モード選択
@@ -436,10 +431,6 @@ function resetChoicesCompletely() {
     
     // 解説も非表示
     hideExplanation();
-    
-    // 強制的にリフロー
-    void choicesGrid.offsetHeight;
-    void document.body.offsetHeight;
 }
 
 /**
@@ -484,7 +475,10 @@ document.getElementById("startBtn").onclick = async function() {
         // 選択肢を完全にリセット（showViewの後）
         resetChoicesCompletely();
         document.getElementById("questionWord").textContent = ""; document.getElementById("progressText").textContent = "";
-        setTimeout(() => { loadQuestion(); btn.disabled = false; btn.textContent = originalText; }, 150);
+        // 単語問題も即座に表示（遅延なし）
+        loadQuestion(); 
+        btn.disabled = false; 
+        btn.textContent = originalText;
     } catch (e) { alert(e.message); btn.disabled = false; btn.textContent = "開始"; }
 };
 
