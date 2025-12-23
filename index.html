@@ -34,14 +34,24 @@
 
         <section id="modeSelectionView" class="card hidden">
             <h3>モードを選択</h3>
+            
             <div class="mode-grid">
                 <button id="selectVocabBtn" class="mode-card">
                     <span class="mode-icon">📖</span><br>単語
                 </button>
-                <button id="selectGrammarBtn" class="mode-card disabled-mode">
-                    <span class="mode-icon">✍️</span><br>文法<br>
-                    <small>(準備中)</small>
+                <button id="selectGrammarBtn" class="mode-card">
+                    <span class="mode-icon">✍️</span><br>文法
                 </button>
+            </div>
+            
+            <div class="announcement-box">
+                <div class="announcement-header">
+                    <span class="announcement-icon">📢</span>
+                    <h4>お知らせ</h4>
+                </div>
+                <ul class="announcement-list" id="announcementList">
+                    <!-- アップデート内容はannouncements.csvから読み込まれます -->
+                </ul>
             </div>
         </section>
 
@@ -181,29 +191,49 @@
                 <button class="grammar-category-btn mode-card" data-category="tense">
                     <span class="mode-icon">⏰</span><br>時制
                 </button>
-                <button class="grammar-category-btn mode-card" data-category="passive">
-                    <span class="mode-icon">🔄</span><br>受動態
+                <button class="grammar-category-btn mode-card disabled-mode" data-category="passive">
+                    <span class="mode-icon">🔄</span><br>受動態<br>
+                    <small>(準備中)</small>
                 </button>
-                <button class="grammar-category-btn mode-card" data-category="modal">
-                    <span class="mode-icon">💪</span><br>助動詞
+                <button class="grammar-category-btn mode-card disabled-mode" data-category="modal">
+                    <span class="mode-icon">💪</span><br>助動詞<br>
+                    <small>(準備中)</small>
                 </button>
-                <button class="grammar-category-btn mode-card" data-category="infinitive">
-                    <span class="mode-icon">∞</span><br>不定詞
+                <button class="grammar-category-btn mode-card disabled-mode" data-category="infinitive">
+                    <span class="mode-icon">∞</span><br>不定詞<br>
+                    <small>(準備中)</small>
                 </button>
-                <button class="grammar-category-btn mode-card" data-category="gerund">
-                    <span class="mode-icon">📝</span><br>動名詞
+                <button class="grammar-category-btn mode-card disabled-mode" data-category="gerund">
+                    <span class="mode-icon">📝</span><br>動名詞<br>
+                    <small>(準備中)</small>
                 </button>
-                <button class="grammar-category-btn mode-card" data-category="participle">
-                    <span class="mode-icon">✂️</span><br>分詞
+                <button class="grammar-category-btn mode-card disabled-mode" data-category="participle">
+                    <span class="mode-icon">✂️</span><br>分詞<br>
+                    <small>(準備中)</small>
                 </button>
-                <button class="grammar-category-btn mode-card" data-category="subjunctive">
-                    <span class="mode-icon">🎭</span><br>仮定法
+                <button class="grammar-category-btn mode-card disabled-mode" data-category="subjunctive">
+                    <span class="mode-icon">🎭</span><br>仮定法<br>
+                    <small>(準備中)</small>
                 </button>
-                <button class="grammar-category-btn mode-card" data-category="comparison">
-                    <span class="mode-icon">📊</span><br>比較
+                <button class="grammar-category-btn mode-card disabled-mode" data-category="comparison">
+                    <span class="mode-icon">📊</span><br>比較<br>
+                    <small>(準備中)</small>
                 </button>
-                <button class="grammar-category-btn mode-card" data-category="relative">
-                    <span class="mode-icon">🔗</span><br>関係詞
+                <button class="grammar-category-btn mode-card disabled-mode" data-category="relative">
+                    <span class="mode-icon">🔗</span><br>関係詞<br>
+                    <small>(準備中)</small>
+                </button>
+                <button class="grammar-category-btn mode-card disabled-mode" data-category="pronoun">
+                    <span class="mode-icon">👤</span><br>代名詞<br>
+                    <small>(準備中)</small>
+                </button>
+                <button class="grammar-category-btn mode-card disabled-mode" data-category="conjunction">
+                    <span class="mode-icon">🔗</span><br>接続詞<br>
+                    <small>(準備中)</small>
+                </button>
+                <button class="grammar-category-btn mode-card disabled-mode" data-category="special">
+                    <span class="mode-icon">⭐</span><br>強調・倒置<br>省略・代用<br>
+                    <small>(準備中)</small>
                 </button>
             </div>
             <button id="backToGrammarTypeBtn" class="secondary" style="margin-top: 15px;">戻る</button>

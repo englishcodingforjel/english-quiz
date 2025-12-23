@@ -56,6 +56,92 @@ themeToggle.onclick = () => {
 if(localStorage.getItem("theme") === "dark") { document.body.classList.add("dark-mode"); themeToggle.textContent = "☀️"; }
 
 /**
+ * お知らせデータ（CSVから読み込まれる）
+ */
+let announcements = [];
+
+/**
+ * お知らせCSVファイルを読み込む
+ * @returns {Promise<Array>} お知らせデータの配列
+ */
+async function loadAnnouncements() {
+    try {
+        const res = await fetch("announcements.csv", { cache: "no-store" });
+        const text = await res.text();
+        const list = [];
+        const lines = text.split(/\r?\n/);
+        
+        // ヘッダー行をスキップ（1行目）
+        for (let i = 1; i < lines.length; i++) {
+            const line = lines[i].trim();
+            if (!line) continue;
+            
+            // CSVのパース（カンマ区切りだが、内容内にカンマがある可能性を考慮）
+            const parts = [];
+            let current = "";
+            let inQuotes = false;
+            for (let j = 0; j < line.length; j++) {
+                const char = line[j];
+                if (char === '"') {
+                    inQuotes = !inQuotes;
+                } else if (char === ',' && !inQuotes) {
+                    parts.push(current.trim());
+                    current = "";
+                } else {
+                    current += char;
+                }
+            }
+            if (current) parts.push(current.trim());
+            
+            // 日付と内容が存在する場合のみ追加
+            if (parts.length >= 2 && parts[0] && parts[1]) {
+                list.push({
+                    date: parts[0],
+                    content: parts[1]
+                });
+            }
+        }
+        
+        return list;
+    } catch (e) {
+        console.error("お知らせの読み込みに失敗しました:", e);
+        return [];
+    }
+}
+
+/**
+ * お知らせリストを表示する
+ */
+async function renderAnnouncements() {
+    const announcementList = document.getElementById("announcementList");
+    if (!announcementList) return;
+    
+    // お知らせを読み込む
+    announcements = await loadAnnouncements();
+    
+    if (announcements.length === 0) {
+        announcementList.innerHTML = '<li style="padding: 10px; color: var(--text-muted); font-size: 0.85rem; text-align: center;">現在お知らせはありません</li>';
+        return;
+    }
+    
+    // 日付の新しい順にソート（最新が上）
+    announcements.sort((a, b) => {
+        const dateA = new Date(a.date.replace(/\//g, '-'));
+        const dateB = new Date(b.date.replace(/\//g, '-'));
+        return dateB - dateA;
+    });
+    
+    announcementList.innerHTML = announcements.map(announcement => {
+        return `
+            <li>
+                <span class="announcement-date">${announcement.date}</span>
+                <span class="announcement-content">${announcement.content}</span>
+            </li>
+        `;
+    }).join("");
+}
+
+/**
  * 指定したビューを表示し、他を隠す
  * @param {string} name - 表示するビューの名前
  */
@@ -67,6 +153,7 @@ function showView(name) {
     document.getElementById("progressBarContainer").classList.toggle("hidden", name !== "quiz");
     document.body.classList.toggle("scroll-lock", name === "quiz");
     if (name === "menu") updateWeakCountDisplay();
+    if (name === "modeSelection") renderAnnouncements();
     // タイトル更新
     if (name === "grammarModeSelection" || name === "grammarTypeSelection" || 
         name === "grammarFillCategory" || name === "grammarMenu" || 
@@ -373,7 +460,7 @@ document.getElementById("passwordBtn").onclick = () => {
  * モード選択遷移
  */
 document.getElementById("selectVocabBtn").onclick = () => { isGrammarMode = false; showView("menu"); };
-document.getElementById("selectGrammarBtn").onclick = () => { alert("文法機能は現在準備中です。"); };
+document.getElementById("selectGrammarBtn").onclick = () => { isGrammarMode = true; showView("grammarModeSelection"); };
 document.getElementById("backToModeBtn").onclick = () => showView("modeSelection");
 
 // 文法モード選択
@@ -386,6 +473,11 @@ document.getElementById("backToGrammarModeBtn").onclick = () => showView("gramma
 
 // 空所補充カテゴリ選択
 document.querySelectorAll(".grammar-category-btn").forEach(btn => {
+    // 無効化されたボタン（disabled-modeクラスがある）はクリックできないようにする
+    if (btn.classList.contains("disabled-mode")) {
+        btn.onclick = null;
+        return;
+    }
     btn.onclick = () => {
         currentGrammarCategory = btn.dataset.category;
         showView("grammarMenu");
@@ -487,9 +579,12 @@ document.getElementById("startBtn").onclick = async function() {
  */
 document.getElementById("grammarStartBtn").onclick = async function() {
     const btn = this; if (btn.disabled) return;
+    const originalText = btn.textContent;
     try {
-        btn.disabled = true; const originalText = btn.textContent; btn.textContent = "読み込み中...";
-        window.speechSynthesis.cancel(); clearInterval(timerInterval);
+        btn.disabled = true; 
+        btn.textContent = "読み込み中...";
+        window.speechSynthesis.cancel(); 
+        clearInterval(timerInterval);
         
         currentGrammarDifficulty = document.getElementById("grammarDifficultySelect").value;
         const fileName = `grammar_${currentGrammarCategory}_fill.csv`;
@@ -504,10 +599,17 @@ document.getElementById("grammarStartBtn").onclick = async function() {
             data = data.filter(item => item.difficulty === targetDifficulty);
         }
         
+        if (data.length === 0) {
+            throw new Error("選択した難易度の問題が見つかりませんでした。");
+        }
+        
         const countInput = parseInt(document.getElementById("grammarCountInput").value);
         const count = isNaN(countInput) ? 20 : countInput;
         quizEntries = data.sort(() => 0.5 - Math.random()).slice(0, count);
-        if (quizEntries.length === 0) throw new Error("問題が見つかりませんでした。");
+        
+        if (quizEntries.length === 0) {
+            throw new Error("問題が見つかりませんでした。");
+        }
 
         // 進捗ドットの生成
         dotContainer.innerHTML = "";
@@ -628,16 +730,40 @@ document.getElementById("backBtn").onclick = () => {
     window.speechSynthesis.cancel(); 
     clearInterval(timerInterval); 
     if (isGrammarMode) {
+        // 文法メニューに戻る際に開始ボタンの状態をリセット
+        const grammarStartBtn = document.getElementById("grammarStartBtn");
+        if (grammarStartBtn) {
+            grammarStartBtn.disabled = false;
+            grammarStartBtn.textContent = "開始";
+        }
         showView("grammarMenu");
     } else {
+        // 単語メニューに戻る際に開始ボタンの状態をリセット
+        const startBtn = document.getElementById("startBtn");
+        if (startBtn) {
+            startBtn.disabled = false;
+            startBtn.textContent = "開始";
+        }
         showView("menu");
     }
 };
 document.getElementById("restartBtn").onclick = () => { 
     window.speechSynthesis.cancel(); 
     if (isGrammarMode) {
+        // 文法メニューに戻る際に開始ボタンの状態をリセット
+        const grammarStartBtn = document.getElementById("grammarStartBtn");
+        if (grammarStartBtn) {
+            grammarStartBtn.disabled = false;
+            grammarStartBtn.textContent = "開始";
+        }
         showView("grammarMenu");
     } else {
+        // 単語メニューに戻る際に開始ボタンの状態をリセット
+        const startBtn = document.getElementById("startBtn");
+        if (startBtn) {
+            startBtn.disabled = false;
+            startBtn.textContent = "開始";
+        }
         showView("menu");
     }
 };
