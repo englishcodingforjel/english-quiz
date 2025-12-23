@@ -151,7 +151,16 @@ function showView(name) {
     });
     if (views[name]) views[name].classList.remove("hidden");
     document.getElementById("progressBarContainer").classList.toggle("hidden", name !== "quiz");
-    document.body.classList.toggle("scroll-lock", name === "quiz");
+    // 文法問題の場合はスクロールを許可（解説が見えるように）
+    if (name === "quiz") {
+        if (isGrammarMode) {
+            document.body.classList.remove("scroll-lock");
+        } else {
+            document.body.classList.add("scroll-lock");
+        }
+    } else {
+        document.body.classList.remove("scroll-lock");
+    }
     if (name === "menu") updateWeakCountDisplay();
     if (name === "modeSelection") renderAnnouncements();
     // タイトル更新
@@ -708,11 +717,18 @@ document.getElementById("openWeakListBtn").onclick = () => {
 };
 
 /**
- * モーダルを閉じる（クイズ中なら背景固定を再適用）
+ * モーダルを閉じる（クイズ中なら背景固定を再適用、ただし文法問題の場合はスクロール許可）
  */
 document.getElementById("closeWeakListBtn").onclick = () => { 
     window.speechSynthesis.cancel(); document.getElementById("weakListModal").classList.add("hidden"); 
-    if (!views.quiz.classList.contains("hidden")) document.body.classList.add("scroll-lock");
+    if (!views.quiz.classList.contains("hidden")) {
+        // 文法問題の場合はスクロールを許可
+        if (isGrammarMode) {
+            document.body.classList.remove("scroll-lock");
+        } else {
+            document.body.classList.add("scroll-lock");
+        }
+    }
 };
 
 /** 履歴の全削除 */
