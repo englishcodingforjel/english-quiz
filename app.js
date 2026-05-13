@@ -1180,6 +1180,40 @@ function updateWeakCountDisplay() {
     document.getElementById("weakCount").textContent = getWeakWords().length;
 }
 
+async function getEntriesForWeakList() {
+    if (allEntries.length) return allEntries;
+    
+    const fileSelect = document.getElementById("difficultySelect");
+    const selectedFileName = fileSelect ? fileSelect.value : "";
+    if (selectedFileName && selectedFileName.endsWith(".csv")) {
+        try {
+            return await loadCsv(selectedFileName, false, false);
+        } catch (e) {
+            console.error(`${selectedFileName} 縺ｮ闍ｦ謇九Μ繧ｹ繝育畑隱ｭ縺ｿ霎ｼ縺ｿ縺ｫ螟ｱ謨励＠縺ｾ縺励◆:`, e);
+        }
+    }
+    
+    const fileNames = Array.from(fileSelect.options)
+        .map(option => option.value)
+        .filter(value => value && value.endsWith(".csv"));
+    
+    const merged = [];
+    for (const fileName of fileNames) {
+        try {
+            const entries = await loadCsv(fileName, false, false);
+            entries.forEach(entry => {
+                if (!merged.some(item => item.number === entry.number)) {
+                    merged.push(entry);
+                }
+            });
+        } catch (e) {
+            console.error(`${fileName} の苦手リスト用読み込みに失敗しました:`, e);
+        }
+    }
+    
+    return merged;
+}
+
 /**
  * 苦手リストから特定のIDを削除
  * @param {number} id - 単語の番号
@@ -1199,14 +1233,25 @@ window.removeWeak = (id) => {
 /**
  * 苦手リストモーダルの表示
  */
-function showWeakListModal() {
+async function showWeakListModal() {
     const weakIds = getWeakWords();
     const stats = getWeakWordStats();
     const listEl = document.getElementById("fullWeakList");
     listEl.innerHTML = "";
+    document.getElementById("weakListModal").classList.remove("hidden");
+    document.body.classList.remove("scroll-lock");
+    
+    if (weakIds.length === 0) {
+        listEl.innerHTML = '<li style="padding:10px; color:var(--text-muted); text-align:center;">苦手単語はまだありません</li>';
+        return;
+    }
+    
+    listEl.innerHTML = '<li style="padding:10px; color:var(--text-muted); text-align:center;">&#x8aad;&#x307f;&#x8fbc;&#x307f;&#x4e2d;...</li>';
+    const visibleEntries = await getEntriesForWeakList();
+    listEl.innerHTML = "";
     
     weakIds.forEach(id => {
-        const entry = allEntries.find(e => e.number === id);
+        const entry = visibleEntries.find(e => e.number === id);
         if (entry) {
             const stat = stats[String(id)];
             const li = document.createElement("li");
@@ -1236,8 +1281,9 @@ function showWeakListModal() {
         }
     });
     
-    document.getElementById("weakListModal").classList.remove("hidden");
-    document.body.classList.remove("scroll-lock");
+    if (!listEl.children.length) {
+        listEl.innerHTML = '<li style="padding:10px; color:var(--text-muted); text-align:center;">教材を読み込めませんでした</li>';
+    }
 }
 
 /**
