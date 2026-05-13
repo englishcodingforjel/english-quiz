@@ -689,6 +689,12 @@ function getTypingTarget(entry) {
     return normalizeTypingAnswer(entry.english);
 }
 
+function focusTypingInput() {
+    if (!typingAnswerInput || typingAnswerInput.disabled) return;
+    typingAnswerInput.focus({ preventScroll: true });
+    typingAnswerInput.click();
+}
+
 function renderTypingSlots(entry, inputText = "") {
     const typed = normalizeTypingAnswer(inputText);
     let typedIndex = 0;
@@ -932,11 +938,11 @@ function loadTypingQuestion(entry) {
     typingAnswerInput.maxLength = getTypingTarget(entry).length + 20;
     renderTypingSlots(entry);
     
-    typingAnswerArea.onclick = () => typingAnswerInput.focus();
+    typingAnswerArea.onclick = focusTypingInput;
     pronounceHintBtn.onclick = event => {
         event.stopPropagation();
         speak(entry.english);
-        typingAnswerInput.focus();
+        focusTypingInput();
     };
     typingAnswerInput.oninput = () => {
         const target = getTypingTarget(entry);
@@ -948,7 +954,9 @@ function loadTypingQuestion(entry) {
         }
     };
     
-    setTimeout(() => typingAnswerInput.focus(), 50);
+    focusTypingInput();
+    requestAnimationFrame(focusTypingInput);
+    setTimeout(focusTypingInput, 150);
 }
 
 /**
