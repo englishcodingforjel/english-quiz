@@ -599,6 +599,10 @@ body.scroll-lock { overflow: hidden; position: fixed; width: 100%; height: 100%;
     text-shadow: none;
     overflow-wrap: anywhere;
 }
+.question-container.ja-to-en-mode {
+    margin-bottom: 4px;
+    padding-bottom: 0;
+}
 .question-source {
     position: absolute;
     bottom: 0;
@@ -663,8 +667,8 @@ body.scroll-lock { overflow: hidden; position: fixed; width: 100%; height: 100%;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 10px;
-    margin-top: -10px;
+    gap: 8px;
+    margin-top: 0;
 }
 .typing-slots {
     width: 100%;
