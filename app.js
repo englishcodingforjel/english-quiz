@@ -46,6 +46,7 @@ const timerBarContainer = document.getElementById("timerBarContainer");
 const progressBarContainer = document.getElementById("progressBarContainer");
 const typingAnswerArea = document.getElementById("typingAnswerArea");
 const typingSlots = document.getElementById("typingSlots");
+const typingCorrectAnswer = document.getElementById("typingCorrectAnswer");
 const typingAnswerInput = document.getElementById("typingAnswerInput");
 const pronounceHintBtn = document.getElementById("pronounceHintBtn");
 
@@ -577,6 +578,8 @@ function handleTypingAnswer(isCorrect) {
         if (dot) dot.classList.add("wrong");
     }
     
+    typingCorrectAnswer.textContent = entry.english;
+    typingCorrectAnswer.classList.remove("hidden");
     typingAnswerInput.disabled = true;
     topScore.textContent = `正解: ${correctCount}`;
     nextBtn.disabled = false;
@@ -824,6 +827,8 @@ function resetChoicesCompletely() {
     typingAnswerArea.classList.add("hidden");
     typingAnswerArea.classList.remove("correct", "wrong");
     typingSlots.innerHTML = "";
+    typingCorrectAnswer.textContent = "";
+    typingCorrectAnswer.classList.add("hidden");
     typingAnswerInput.value = "";
     typingAnswerInput.disabled = false;
     
@@ -936,6 +941,8 @@ function loadTypingQuestion(entry) {
     choicesGrid.style.visibility = "hidden";
     choicesGrid.style.opacity = "0";
     typingAnswerArea.classList.remove("hidden", "correct", "wrong");
+    typingCorrectAnswer.textContent = "";
+    typingCorrectAnswer.classList.add("hidden");
     typingAnswerInput.value = "";
     typingAnswerInput.disabled = false;
     typingAnswerInput.maxLength = getTypingTarget(entry).length + 20;
