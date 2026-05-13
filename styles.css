@@ -672,22 +672,23 @@ body.scroll-lock { overflow: hidden; position: fixed; width: 100%; height: 100%;
 }
 .typing-slots {
     width: 100%;
-    display: flex;
-    flex-wrap: wrap;
+    display: grid;
     justify-content: center;
-    gap: 6px;
+    gap: var(--slot-gap, 6px);
     min-height: 42px;
+    overflow: hidden;
 }
 .typing-slot {
-    width: 24px;
-    height: 34px;
+    width: 100%;
+    min-width: 0;
+    height: var(--slot-height, 34px);
     border-bottom: 3px solid var(--blue);
     display: inline-flex;
     align-items: center;
     justify-content: center;
     color: var(--blue);
     font-weight: 800;
-    font-size: 1.25rem;
+    font-size: var(--slot-font-size, 1.25rem);
     line-height: 1;
 }
 .typing-slot.filled {
@@ -701,14 +702,19 @@ body.scroll-lock { overflow: hidden; position: fixed; width: 100%; height: 100%;
     font-size: 1.05rem;
     font-weight: 800;
 }
+.typing-correct-answer.near {
+    color: #f59e0b;
+}
 .typing-separator {
-    min-width: 12px;
-    height: 34px;
+    min-width: 0;
+    width: 100%;
+    height: var(--slot-height, 34px);
     display: inline-flex;
     align-items: center;
     justify-content: center;
     color: var(--text-muted);
     font-weight: 700;
+    font-size: var(--slot-font-size, 1.25rem);
 }
 .typing-input {
     position: fixed;
@@ -734,6 +740,11 @@ body.scroll-lock { overflow: hidden; position: fixed; width: 100%; height: 100%;
     border-bottom-color: var(--green);
     color: var(--green);
     background: var(--green-light);
+}
+.typing-answer-area.near .typing-slot {
+    border-bottom-color: #f59e0b;
+    color: #d97706;
+    background: #fef3c7;
 }
 @keyframes correctPulse {
     0% { transform: scale(1); }

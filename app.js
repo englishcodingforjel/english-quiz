@@ -563,7 +563,7 @@ function handleAnswer(idx) {
     nextBtn.disabled = false;
 }
 
-function handleTypingAnswer(isCorrect) {
+function handleTypingAnswer(isCorrect, isNearMiss = false) {
     if (answered) return;
     answered = true;
     clearInterval(timerInterval);
@@ -583,6 +583,13 @@ function handleTypingAnswer(isCorrect) {
         correctCount++;
         typingAnswerArea.classList.add("correct");
         if (dot) dot.classList.add("correct");
+    } else if (isNearMiss) {
+        typingAnswerArea.classList.add("near");
+        wrongAnswers.push({
+            english: entry.english,
+            meaning: correctMeaning
+        });
+        if (dot) dot.classList.add("wrong");
     } else {
         typingAnswerArea.classList.add("wrong");
         wrongAnswers.push({
@@ -592,7 +599,8 @@ function handleTypingAnswer(isCorrect) {
         if (dot) dot.classList.add("wrong");
     }
     
-    typingCorrectAnswer.textContent = entry.english;
+    typingCorrectAnswer.textContent = isNearMiss ? `惜しい！ ${entry.english}` : entry.english;
+    typingCorrectAnswer.classList.toggle("near", isNearMiss);
     typingCorrectAnswer.classList.remove("hidden");
     typingAnswerInput.disabled = true;
     topScore.textContent = `正解: ${correctCount}`;
@@ -708,6 +716,30 @@ function getTypingTarget(entry) {
     return normalizeTypingAnswer(entry.english);
 }
 
+function getEditDistance(a, b) {
+    const dp = Array.from({ length: a.length + 1 }, () => Array(b.length + 1).fill(0));
+    
+    for (let i = 0; i <= a.length; i++) dp[i][0] = i;
+    for (let j = 0; j <= b.length; j++) dp[0][j] = j;
+    
+    for (let i = 1; i <= a.length; i++) {
+        for (let j = 1; j <= b.length; j++) {
+            const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+            dp[i][j] = Math.min(
+                dp[i - 1][j] + 1,
+                dp[i][j - 1] + 1,
+                dp[i - 1][j - 1] + cost
+            );
+        }
+    }
+    
+    return dp[a.length][b.length];
+}
+
+function isNearTypingMiss(typed, target) {
+    return typed !== target && getEditDistance(typed, target) === 1;
+}
+
 function focusTypingInput() {
     if (!typingAnswerInput || typingAnswerInput.disabled) return;
     typingAnswerInput.focus({ preventScroll: true });
@@ -716,10 +748,17 @@ function focusTypingInput() {
 
 function renderTypingSlots(entry, inputText = "") {
     const typed = normalizeTypingAnswer(inputText);
+    const chars = Array.from(entry.english);
+    const itemCount = Math.max(chars.length, 1);
     let typedIndex = 0;
     typingSlots.innerHTML = "";
+    typingSlots.style.gridTemplateColumns = `repeat(${itemCount}, minmax(0, 1fr))`;
+    typingSlots.style.maxWidth = `${itemCount * 30}px`;
+    typingSlots.style.setProperty("--slot-gap", itemCount > 24 ? "2px" : itemCount > 16 ? "3px" : "6px");
+    typingSlots.style.setProperty("--slot-font-size", itemCount > 24 ? "0.8rem" : itemCount > 16 ? "0.95rem" : "1.25rem");
+    typingSlots.style.setProperty("--slot-height", itemCount > 24 ? "28px" : itemCount > 16 ? "31px" : "34px");
     
-    Array.from(entry.english).forEach(char => {
+    chars.forEach(char => {
         if (/[a-z0-9]/i.test(char.normalize("NFKC"))) {
             const slot = document.createElement("span");
             slot.className = "typing-slot";
@@ -841,10 +880,11 @@ function resetChoicesCompletely() {
     resetChoiceButtons();
     questionContainer.classList.remove("ja-to-en-mode");
     typingAnswerArea.classList.add("hidden");
-    typingAnswerArea.classList.remove("correct", "wrong");
+    typingAnswerArea.classList.remove("correct", "wrong", "near");
     typingSlots.innerHTML = "";
     typingCorrectAnswer.textContent = "";
     typingCorrectAnswer.classList.add("hidden");
+    typingCorrectAnswer.classList.remove("near");
     typingAnswerInput.value = "";
     typingAnswerInput.disabled = false;
     
@@ -956,9 +996,10 @@ function loadTypingQuestion(entry) {
     choicesGrid.classList.add("hidden");
     choicesGrid.style.visibility = "hidden";
     choicesGrid.style.opacity = "0";
-    typingAnswerArea.classList.remove("hidden", "correct", "wrong");
+    typingAnswerArea.classList.remove("hidden", "correct", "wrong", "near");
     typingCorrectAnswer.textContent = "";
     typingCorrectAnswer.classList.add("hidden");
+    typingCorrectAnswer.classList.remove("near");
     typingAnswerInput.value = "";
     typingAnswerInput.disabled = false;
     typingAnswerInput.maxLength = getTypingTarget(entry).length + 20;
@@ -976,8 +1017,15 @@ function loadTypingQuestion(entry) {
         renderTypingSlots(entry, typed);
         
         if (typed.length >= target.length) {
-            handleTypingAnswer(typed === target);
+            handleTypingAnswer(typed === target, isNearTypingMiss(typed, target));
         }
+    };
+    typingAnswerInput.onkeydown = event => {
+        if (event.key !== "Enter") return;
+        const target = getTypingTarget(entry);
+        const typed = normalizeTypingAnswer(typingAnswerInput.value);
+        if (typed.length === 0) return;
+        handleTypingAnswer(typed === target, isNearTypingMiss(typed, target));
     };
     
     focusTypingInput();
