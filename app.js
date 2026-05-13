@@ -236,10 +236,22 @@ function initVocabModeControls() {
     const directionButtons = Array.from(document.querySelectorAll("[data-vocab-direction]"));
     const answerButtons = Array.from(document.querySelectorAll("[data-answer-mode]"));
     const answerModeArea = document.getElementById("answerModeArea");
+    const weakModeCheck = document.getElementById("weakModeCheck");
+    
+    const forceEnglishToJapanese = () => {
+        vocabDirection = "enToJa";
+        answerMode = "choice";
+        localStorage.setItem(VOCAB_DIRECTION_KEY, vocabDirection);
+        localStorage.setItem(ANSWER_MODE_KEY, answerMode);
+    };
     
     const render = () => {
+        if (weakModeCheck && weakModeCheck.checked) {
+            forceEnglishToJapanese();
+        }
         directionButtons.forEach(btn => {
             btn.classList.toggle("active", btn.dataset.vocabDirection === vocabDirection);
+            btn.disabled = weakModeCheck && weakModeCheck.checked;
         });
         answerButtons.forEach(btn => {
             btn.classList.toggle("active", btn.dataset.answerMode === answerMode);
@@ -272,6 +284,9 @@ function initVocabModeControls() {
     if (vocabDirection === "enToJa") {
         answerMode = "choice";
         localStorage.setItem(ANSWER_MODE_KEY, answerMode);
+    }
+    if (weakModeCheck) {
+        weakModeCheck.onchange = render;
     }
     render();
 }
@@ -574,7 +589,6 @@ function handleTypingAnswer(isCorrect) {
             english: entry.english,
             meaning: correctMeaning
         });
-        saveWeakWord(entry.number);
         if (dot) dot.classList.add("wrong");
     }
     
@@ -638,7 +652,9 @@ function handleVocabAnswer(idx, entry, dot) {
             english: entry.english,
             meaning: correctMeaning
         });
-        saveWeakWord(entry.number);
+        if (vocabDirection === "enToJa") {
+            saveWeakWord(entry.number);
+        }
         if (dot) dot.classList.add("wrong");
     }
 }
@@ -1026,6 +1042,10 @@ async function startVocabQuiz() {
         
         // 苦手モードフィルタ
         if (document.getElementById("weakModeCheck").checked) {
+            vocabDirection = "enToJa";
+            answerMode = "choice";
+            localStorage.setItem(VOCAB_DIRECTION_KEY, vocabDirection);
+            localStorage.setItem(ANSWER_MODE_KEY, answerMode);
             const weakIds = getWeakWords();
             data = data.filter(item => weakIds.includes(item.number));
             if (!data.length) throw new Error("苦手単語がありません。");
