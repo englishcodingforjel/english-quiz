@@ -816,6 +816,7 @@ function resetChoiceButtons() {
  * 選択肢を完全にリセットする関数
  */
 function resetChoicesCompletely() {
+    choicesGrid.classList.remove("hidden");
     choicesGrid.style.visibility = "hidden";
     choicesGrid.style.opacity = "0";
     resetChoiceButtons();
@@ -867,6 +868,7 @@ function loadQuestion() {
     }
     
     if (!shouldUseTypingMode()) {
+        choicesGrid.classList.remove("hidden");
         choicesGrid.style.visibility = "visible";
         choicesGrid.style.opacity = "1";
     }
@@ -930,6 +932,7 @@ function loadVocabQuestion(entry) {
 }
 
 function loadTypingQuestion(entry) {
+    choicesGrid.classList.add("hidden");
     choicesGrid.style.visibility = "hidden";
     choicesGrid.style.opacity = "0";
     typingAnswerArea.classList.remove("hidden", "correct", "wrong");
