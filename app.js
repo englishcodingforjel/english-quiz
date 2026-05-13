@@ -15,6 +15,8 @@ const DIFFICULTY_MAP = { basic: "1", standard: "2", advanced: "3" };
 const GRAMMAR_VIEWS = ["grammarModeSelection", "grammarTypeSelection", "grammarFillCategory", "grammarMenu"];
 const WEAK_WORD_STATS_KEY = "weakWordStats";
 const VOICE_ENABLED_KEY = "voiceEnabled";
+const VOCAB_DIRECTION_KEY = "vocabDirection";
+const ANSWER_MODE_KEY = "answerMode";
 
 // ==================== DOM要素の取得 ====================
 const views = {
@@ -42,6 +44,10 @@ const choicesGrid = document.getElementById("choicesGrid");
 const progressText = document.getElementById("progressText");
 const timerBarContainer = document.getElementById("timerBarContainer");
 const progressBarContainer = document.getElementById("progressBarContainer");
+const typingAnswerArea = document.getElementById("typingAnswerArea");
+const typingSlots = document.getElementById("typingSlots");
+const typingAnswerInput = document.getElementById("typingAnswerInput");
+const pronounceHintBtn = document.getElementById("pronounceHintBtn");
 
 // ==================== 状態変数 ====================
 let allEntries = [];
@@ -59,6 +65,8 @@ let announcements = [];
 let isGrammarMode = false;
 let currentGrammarCategory = "";
 let currentGrammarDifficulty = "standard";
+let vocabDirection = localStorage.getItem(VOCAB_DIRECTION_KEY) || "enToJa";
+let answerMode = localStorage.getItem(ANSWER_MODE_KEY) || "choice";
 
 // ==================== ユーティリティ関数 ====================
 
@@ -218,6 +226,53 @@ function initVoiceToggle() {
             window.speechSynthesis.cancel();
         }
     };
+}
+
+/**
+ * 単語クイズの出題方向・回答形式UIを初期化
+ */
+function initVocabModeControls() {
+    const directionButtons = Array.from(document.querySelectorAll("[data-vocab-direction]"));
+    const answerButtons = Array.from(document.querySelectorAll("[data-answer-mode]"));
+    const answerModeArea = document.getElementById("answerModeArea");
+    
+    const render = () => {
+        directionButtons.forEach(btn => {
+            btn.classList.toggle("active", btn.dataset.vocabDirection === vocabDirection);
+        });
+        answerButtons.forEach(btn => {
+            btn.classList.toggle("active", btn.dataset.answerMode === answerMode);
+        });
+        if (answerModeArea) {
+            answerModeArea.classList.toggle("hidden", vocabDirection !== "jaToEn");
+        }
+    };
+    
+    directionButtons.forEach(btn => {
+        btn.onclick = () => {
+            vocabDirection = btn.dataset.vocabDirection;
+            localStorage.setItem(VOCAB_DIRECTION_KEY, vocabDirection);
+            if (vocabDirection === "enToJa") {
+                answerMode = "choice";
+                localStorage.setItem(ANSWER_MODE_KEY, answerMode);
+            }
+            render();
+        };
+    });
+    
+    answerButtons.forEach(btn => {
+        btn.onclick = () => {
+            answerMode = btn.dataset.answerMode;
+            localStorage.setItem(ANSWER_MODE_KEY, answerMode);
+            render();
+        };
+    });
+    
+    if (vocabDirection === "enToJa") {
+        answerMode = "choice";
+        localStorage.setItem(ANSWER_MODE_KEY, answerMode);
+    }
+    render();
 }
 
 /**
@@ -471,6 +526,10 @@ async function loadCsv(fileName, forceRefresh = false, isGrammar = false) {
  */
 function handleAnswer(idx) {
     if (answered) return;
+    if (shouldUseTypingMode()) {
+        handleTypingAnswer(false);
+        return;
+    }
     answered = true;
     clearInterval(timerInterval);
     choiceButtons.forEach(b => b.disabled = true);
@@ -484,6 +543,41 @@ function handleAnswer(idx) {
         handleVocabAnswer(idx, entry, dot);
     }
     
+    topScore.textContent = `正解: ${correctCount}`;
+    nextBtn.disabled = false;
+}
+
+function handleTypingAnswer(isCorrect) {
+    if (answered) return;
+    answered = true;
+    clearInterval(timerInterval);
+    
+    const entry = quizEntries[currentIndex];
+    const dot = document.getElementById(`dot-${currentIndex}`);
+    const correctMeaning = formatMeaning(entry);
+    
+    recordWordAttempt(entry.number, isCorrect);
+    answerHistory.push({
+        english: entry.english,
+        meaning: correctMeaning,
+        isCorrect
+    });
+    
+    if (isCorrect) {
+        correctCount++;
+        typingAnswerArea.classList.add("correct");
+        if (dot) dot.classList.add("correct");
+    } else {
+        typingAnswerArea.classList.add("wrong");
+        wrongAnswers.push({
+            english: entry.english,
+            meaning: correctMeaning
+        });
+        saveWeakWord(entry.number);
+        if (dot) dot.classList.add("wrong");
+    }
+    
+    typingAnswerInput.disabled = true;
     topScore.textContent = `正解: ${correctCount}`;
     nextBtn.disabled = false;
 }
@@ -571,6 +665,61 @@ function startTimer() {
 }
 
 /**
+ * 単語の日本語訳を問題文・レビュー用に整形
+ * @param {Object} entry - 単語エントリ
+ * @returns {string} 表示用の日本語訳
+ */
+function formatMeaning(entry) {
+    const parts = entry.meanings.join('、').split('、').filter(s => s.trim());
+    return parts.length > 1 ? `${parts[0]} / ${parts[1]}` : parts[0];
+}
+
+function shouldUseTypingMode() {
+    return !isGrammarMode && vocabDirection === "jaToEn" && answerMode === "typing";
+}
+
+function normalizeTypingAnswer(text) {
+    return text
+        .normalize("NFKC")
+        .toLowerCase()
+        .replace(/[^a-z0-9]/g, "");
+}
+
+function getTypingTarget(entry) {
+    return normalizeTypingAnswer(entry.english);
+}
+
+function renderTypingSlots(entry, inputText = "") {
+    const typed = normalizeTypingAnswer(inputText);
+    let typedIndex = 0;
+    typingSlots.innerHTML = "";
+    
+    Array.from(entry.english).forEach(char => {
+        if (/[a-z0-9]/i.test(char.normalize("NFKC"))) {
+            const slot = document.createElement("span");
+            slot.className = "typing-slot";
+            const value = typed[typedIndex] || "";
+            if (value) {
+                slot.textContent = value;
+                slot.classList.add("filled");
+            }
+            typingSlots.appendChild(slot);
+            typedIndex++;
+        } else if (char.trim()) {
+            const separator = document.createElement("span");
+            separator.className = "typing-separator";
+            separator.textContent = char;
+            typingSlots.appendChild(separator);
+        } else {
+            const separator = document.createElement("span");
+            separator.className = "typing-separator";
+            separator.textContent = "";
+            typingSlots.appendChild(separator);
+        }
+    });
+}
+
+/**
  * 現在の問題に対する4つの選択肢を構築する
  * @param {Object} correctEntry - 正解の単語オブジェクト
  * @returns {Array} 選択肢オブジェクトの配列
@@ -608,13 +757,10 @@ function buildChoices(correctEntry) {
             }
         }
         
-        return picks.map(entry => {
-            const parts = entry.meanings.join('、').split('、').filter(s => s.trim());
-            return {
-                entry,
-                display: parts.length > 1 ? `${parts[0]} / ${parts[1]}` : parts[0]
-            };
-        }).sort(() => 0.5 - Math.random());
+        return picks.map(entry => ({
+            entry,
+            display: formatMeaning(entry)
+        })).sort(() => 0.5 - Math.random());
     }
 }
 
@@ -667,6 +813,12 @@ function resetChoicesCompletely() {
     choicesGrid.style.visibility = "hidden";
     choicesGrid.style.opacity = "0";
     resetChoiceButtons();
+    questionContainer.classList.remove("ja-to-en-mode");
+    typingAnswerArea.classList.add("hidden");
+    typingAnswerArea.classList.remove("correct", "wrong");
+    typingSlots.innerHTML = "";
+    typingAnswerInput.value = "";
+    typingAnswerInput.disabled = false;
     
     questionWord.textContent = "";
     questionSource.textContent = "";
@@ -708,8 +860,10 @@ function loadQuestion() {
         loadVocabQuestion(entry);
     }
     
-    choicesGrid.style.visibility = "visible";
-    choicesGrid.style.opacity = "1";
+    if (!shouldUseTypingMode()) {
+        choicesGrid.style.visibility = "visible";
+        choicesGrid.style.opacity = "1";
+    }
 }
 
 /**
@@ -718,6 +872,7 @@ function loadQuestion() {
  */
 function loadGrammarQuestion(entry) {
     questionContainer.classList.add("grammar-mode");
+    questionContainer.classList.remove("ja-to-en-mode");
     questionWord.textContent = entry.question;
     
     if (entry.source && entry.source.trim()) {
@@ -744,19 +899,56 @@ function loadGrammarQuestion(entry) {
  */
 function loadVocabQuestion(entry) {
     questionContainer.classList.remove("grammar-mode");
-    questionWord.textContent = entry.english;
+    questionContainer.classList.toggle("ja-to-en-mode", vocabDirection === "jaToEn");
+    questionWord.textContent = vocabDirection === "jaToEn" ? formatMeaning(entry) : entry.english;
     questionSource.style.display = "none";
+    
+    if (shouldUseTypingMode()) {
+        loadTypingQuestion(entry);
+        startTimer();
+        return;
+    }
     
     currentChoicesData = buildChoices(entry);
     choiceButtons.forEach((btn, i) => {
-        btn.textContent = currentChoicesData[i].display;
+        btn.textContent = vocabDirection === "jaToEn" ? currentChoicesData[i].entry.english : currentChoicesData[i].display;
         btn.className = "choice";
         btn.disabled = false;
         btn.onclick = () => handleAnswer(i);
     });
     
-    speak(entry.english);
+    if (vocabDirection === "enToJa") {
+        speak(entry.english);
+    }
     startTimer();
+}
+
+function loadTypingQuestion(entry) {
+    choicesGrid.style.visibility = "hidden";
+    choicesGrid.style.opacity = "0";
+    typingAnswerArea.classList.remove("hidden", "correct", "wrong");
+    typingAnswerInput.value = "";
+    typingAnswerInput.disabled = false;
+    typingAnswerInput.maxLength = getTypingTarget(entry).length + 20;
+    renderTypingSlots(entry);
+    
+    typingAnswerArea.onclick = () => typingAnswerInput.focus();
+    pronounceHintBtn.onclick = event => {
+        event.stopPropagation();
+        speak(entry.english);
+        typingAnswerInput.focus();
+    };
+    typingAnswerInput.oninput = () => {
+        const target = getTypingTarget(entry);
+        const typed = normalizeTypingAnswer(typingAnswerInput.value);
+        renderTypingSlots(entry, typed);
+        
+        if (typed.length >= target.length) {
+            handleTypingAnswer(typed === target);
+        }
+    };
+    
+    setTimeout(() => typingAnswerInput.focus(), 50);
 }
 
 /**
@@ -799,6 +991,11 @@ async function startVocabQuiz() {
     
     const originalText = btn.textContent;
     try {
+        const file = document.getElementById("difficultySelect").value;
+        if (!file) {
+            throw new Error("教材を選択してください。");
+        }
+        
         resetChoicesCompletely();
         btn.disabled = true;
         btn.textContent = "読み込み中...";
@@ -806,7 +1003,6 @@ async function startVocabQuiz() {
         clearInterval(timerInterval);
         
         timeLimit = parseInt(document.getElementById("timerSelect").value);
-        const file = document.getElementById("difficultySelect").value;
         allEntries = await loadCsv(file, false, false);
         let data = allEntries;
         
@@ -1143,7 +1339,7 @@ document.getElementById("clearHistoryBtn").onclick = () => {
 
 // 問題文タップで再読み上げ（単語問題のみ）
 questionWord.onclick = () => {
-    if (quizEntries[currentIndex] && !isGrammarMode) {
+    if (quizEntries[currentIndex] && !isGrammarMode && vocabDirection === "enToJa") {
         speak(quizEntries[currentIndex].english);
     }
 };
@@ -1155,4 +1351,5 @@ document.getElementById("restartBtn").onclick = handleBackToMenu;
 // ==================== 初期化 ====================
 initTheme();
 initVoiceToggle();
+initVocabModeControls();
 showView("password");

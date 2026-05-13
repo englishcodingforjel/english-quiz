@@ -181,7 +181,7 @@ body.scroll-lock { overflow: hidden; position: fixed; width: 100%; height: 100%;
     margin: 0 0 20px 0;
     font-size: 1.3rem;
     font-weight: 700;
-    color: var(--text);
+    color: var(--blue);
     letter-spacing: -0.02em;
 }
 
@@ -375,6 +375,37 @@ body.scroll-lock { overflow: hidden; position: fixed; width: 100%; height: 100%;
     display: flex; 
     gap: 8px; 
 }
+.quiz-mode-box {
+    width: 100%;
+    margin: 8px 0 12px;
+}
+.segmented-control {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 4px;
+    padding: 4px;
+    background: var(--progress-bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    margin-bottom: 8px;
+}
+.segment-btn {
+    min-height: 40px;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--text-muted);
+    font-family: inherit;
+    font-size: 0.88rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+}
+.segment-btn.active {
+    background: var(--card);
+    color: var(--blue);
+    box-shadow: var(--shadow-sm);
+}
 
 /* ボタンパーツ */
 .primary, .secondary { 
@@ -557,6 +588,17 @@ body.scroll-lock { overflow: hidden; position: fixed; width: 100%; height: 100%;
     font-weight: 600;
     text-shadow: none;
 }
+.question-container.ja-to-en-mode .question {
+    font-size: clamp(1.15rem, 4.8vw, 1.55rem);
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    line-height: 1.55;
+    color: var(--blue);
+    font-weight: 700;
+    text-shadow: none;
+    overflow-wrap: anywhere;
+}
 .question-source {
     position: absolute;
     bottom: 0;
@@ -615,6 +657,63 @@ body.scroll-lock { overflow: hidden; position: fixed; width: 100%; height: 100%;
     border-color: var(--red) !important; 
     box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
     animation: wrongShake 0.5s ease;
+}
+.typing-answer-area {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+}
+.typing-slots {
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 6px;
+    min-height: 42px;
+}
+.typing-slot {
+    width: 24px;
+    height: 34px;
+    border-bottom: 3px solid var(--blue);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--blue);
+    font-weight: 800;
+    font-size: 1.25rem;
+    line-height: 1;
+}
+.typing-slot.filled {
+    background: var(--blue-light);
+    border-radius: 6px 6px 2px 2px;
+}
+.typing-separator {
+    min-width: 12px;
+    height: 34px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+    font-weight: 700;
+}
+.typing-input {
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    position: absolute;
+    pointer-events: none;
+}
+.typing-answer-area.wrong .typing-slot {
+    border-bottom-color: var(--red);
+    color: var(--red);
+    background: var(--red-light);
+}
+.typing-answer-area.correct .typing-slot {
+    border-bottom-color: var(--green);
+    color: var(--green);
+    background: var(--green-light);
 }
 @keyframes correctPulse {
     0% { transform: scale(1); }
