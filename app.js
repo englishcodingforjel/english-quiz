@@ -102,6 +102,32 @@ const INTERPRETATION_QUESTION_SETS = {
             translation: "私は学校に通っている。"
         }
     },
+    stage1Pattern2: {
+        sentenceWords: ["She", "is", "kind"],
+        punctuation: ".",
+        questions: [
+            {
+                prompt: "動詞はどれか？",
+                correctIndexes: [1]
+            },
+            {
+                prompt: "主語はどれか？",
+                correctIndexes: [0]
+            },
+            {
+                prompt: "補語はどれか？",
+                correctIndexes: [2]
+            }
+        ],
+        clearResult: {
+            tokens: [
+                { text: "She", label: "s" },
+                { text: "is", label: "v" },
+                { text: "kind", label: "c" }
+            ],
+            translation: "彼女は優しい"
+        }
+    },
     stage2Pattern1: {
         sentenceWords: ["The", "young", "office", "worker", "walked", "quickly", "to", "the", "train", "station"],
         punctuation: ".",
@@ -139,6 +165,40 @@ const INTERPRETATION_QUESTION_SETS = {
                 { text: "to the train station", label: "m", wrap: true }
             ],
             translation: "その若い会社員はすばやくその駅へ歩いていった。"
+        }
+    },
+    stage2Pattern2: {
+        sentenceWords: ["The", "fresh", "coffee", "in", "the", "kitchen", "smelled", "wonderful", "this", "rainy", "morning"],
+        punctuation: ".",
+        questions: [
+            {
+                prompt: "動詞はどれか？",
+                correctIndexes: [6]
+            },
+            {
+                prompt: "主語はどれか？",
+                correctOptions: [
+                    { id: "shortSubject", indexes: [0, 1, 2] },
+                    { id: "fullSubject", indexes: [0, 1, 2, 3, 4, 5] }
+                ]
+            },
+            {
+                prompt: "補語はどれか？",
+                correctIndexes: [7]
+            },
+            {
+                prompt: "Mを選ぶ",
+                correctIndexes: [8, 9, 10]
+            }
+        ],
+        clearResult: {
+            tokens: [
+                { text: "The fresh coffee in the kitchen", label: "s" },
+                { text: "smelled", label: "v" },
+                { text: "wonderful", label: "c" },
+                { text: "this rainy morning", label: "m", wrap: true }
+            ],
+            translation: "キッチンの淹れたてのコーヒーは、この雨の朝、素晴らしい香りがした。"
         }
     }
 };
@@ -594,7 +654,12 @@ function renderInterpretationQuestion() {
     confirmBtn.textContent = "確定";
     
     sentence.innerHTML = "";
-    sentence.style.setProperty("--word-columns", String(Math.min(set.sentenceWords.length, 5)));
+    const wordCount = set.sentenceWords.length;
+    const columns = wordCount <= 5 ? wordCount : Math.ceil(wordCount / 2);
+    sentence.style.setProperty("--word-columns", String(columns));
+    sentence.style.setProperty("--word-font-size", wordCount > 10 ? "0.62rem" : wordCount > 8 ? "0.72rem" : "0.86rem");
+    sentence.style.setProperty("--word-min-height", wordCount > 8 ? "40px" : "48px");
+    sentence.style.setProperty("--word-padding-x", wordCount > 8 ? "2px" : "3px");
     set.sentenceWords.forEach((word, index) => {
         const tile = document.createElement("button");
         tile.className = index === set.sentenceWords.length - 1 && set.punctuation ? "word-tile has-period" : "word-tile";
@@ -1685,7 +1750,15 @@ document.getElementById("backToSyntaxStageBtn").onclick = () => showInterpretati
 document.getElementById("selectPattern1Btn").onclick = () => {
     startInterpretationQuestionSet(getPatternSetId(1));
 };
-["selectPattern2Btn", "selectPattern3Btn", "selectPattern4Btn", "selectPattern5Btn"].forEach(id => {
+document.getElementById("selectPattern2Btn").onclick = () => {
+    const setId = getPatternSetId(2);
+    if (INTERPRETATION_QUESTION_SETS[setId]) {
+        startInterpretationQuestionSet(setId);
+    } else {
+        document.getElementById("syntaxStageStatus").textContent = "この文型は準備中です";
+    }
+};
+["selectPattern3Btn", "selectPattern4Btn", "selectPattern5Btn"].forEach(id => {
     document.getElementById(id).onclick = () => {
         document.getElementById("syntaxStageStatus").textContent = "この文型は準備中です";
     };
