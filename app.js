@@ -25,6 +25,7 @@ const views = {
     menu: document.getElementById("menuView"),
     quiz: document.getElementById("quizView"),
     result: document.getElementById("resultView"),
+    interpretationGame: document.getElementById("interpretationGameView"),
     grammarModeSelection: document.getElementById("grammarModeSelectionView"),
     grammarTypeSelection: document.getElementById("grammarTypeSelectionView"),
     grammarFillCategory: document.getElementById("grammarFillCategoryView"),
@@ -68,6 +69,71 @@ let currentGrammarCategory = "";
 let currentGrammarDifficulty = "standard";
 let vocabDirection = localStorage.getItem(VOCAB_DIRECTION_KEY) || "enToJa";
 let answerMode = localStorage.getItem(ANSWER_MODE_KEY) || "choice";
+let activeInterpretationSetId = "";
+let activeInterpretationQuestionIndex = 0;
+let isInterpretationAnswerConfirmed = false;
+let activeSyntaxStageId = "stage1";
+let interpretationAnswerMemory = {};
+
+const INTERPRETATION_QUESTION_SETS = {
+    stage1Pattern1: {
+        sentenceWords: ["I", "go", "to", "school"],
+        punctuation: ".",
+        questions: [
+            {
+                prompt: "動詞はどれか？",
+                correctIndexes: [1]
+            },
+            {
+                prompt: "主語はどれか？",
+                correctIndexes: [0]
+            },
+            {
+                prompt: "Mを選ぶ",
+                correctIndexes: [2, 3]
+            }
+        ]
+    },
+    stage2Pattern1: {
+        sentenceWords: ["The", "young", "office", "worker", "walked", "quickly", "to", "the", "train", "station"],
+        punctuation: ".",
+        questions: [
+            {
+                prompt: "動詞はどれか？",
+                correctIndexes: [4]
+            },
+            {
+                prompt: "主語はどれか？",
+                correctIndexes: [0, 1, 2, 3]
+            },
+            {
+                prompt: "Mを選ぶ",
+                rememberKey: "stage2Pattern1M",
+                correctOptions: [
+                    { id: "quickly", indexes: [5] },
+                    { id: "toTheTrainStation", indexes: [6, 7, 8, 9] }
+                ]
+            },
+            {
+                prompt: "Mを選ぶ",
+                rememberKey: "stage2Pattern1M",
+                correctOptions: [
+                    { id: "quickly", indexes: [5] },
+                    { id: "toTheTrainStation", indexes: [6, 7, 8, 9] }
+                ]
+            }
+        ],
+        clearResult: {
+            tokens: [
+                { text: "The young office worker", label: "s" },
+                { text: "walked", label: "v" },
+                { text: "quickly", label: "m", wrap: true },
+                { text: "to the train station", label: "m", wrap: true }
+            ],
+            translation: "その若い会社員はすばやくその駅へ歩いていった。"
+        }
+    }
+};
 
 // ==================== ユーティリティ関数 ====================
 
@@ -431,6 +497,10 @@ async function renderAnnouncements() {
  */
 function updateTitle(viewName) {
     const isGrammarView = GRAMMAR_VIEWS.includes(viewName) || (viewName === "quiz" && isGrammarMode);
+    if (viewName === "interpretationGame") {
+        topTitle.textContent = "英文解釈ゲーム";
+        return;
+    }
     topTitle.textContent = isGrammarView ? "英文法クイズ" : "英単語クイズ";
 }
 
@@ -451,6 +521,210 @@ function showView(name) {
     if (name === "modeSelection") renderAnnouncements();
     
     updateTitle(name);
+}
+
+function showInterpretationPanel(panelId) {
+    ["interpretationStageSelect", "syntaxStageView", "pattern1QuestionView"].forEach(id => {
+        const panel = document.getElementById(id);
+        if (panel) panel.classList.toggle("hidden", id !== panelId);
+    });
+}
+
+function openSyntaxStage(stageId) {
+    activeSyntaxStageId = stageId;
+    const stageNumber = stageId === "stage2" ? "2" : "1";
+    document.getElementById("syntaxStageTitle").textContent = `ステージ${stageNumber}：文型`;
+    document.getElementById("syntaxStageStatus").textContent = "";
+    showInterpretationPanel("syntaxStageView");
+}
+
+function getPatternSetId(patternNumber) {
+    return `${activeSyntaxStageId}Pattern${patternNumber}`;
+}
+
+function getActiveInterpretationSet() {
+    return INTERPRETATION_QUESTION_SETS[activeInterpretationSetId];
+}
+
+function renderInterpretationProgress(set) {
+    const progress = document.getElementById("interpretationProgress");
+    progress.innerHTML = "";
+    progress.className = "interpretation-progress-boxes";
+    
+    set.questions.forEach((_, index) => {
+        const box = document.createElement("div");
+        box.className = "interpretation-progress-box";
+        box.textContent = String(index + 1);
+        if (index < activeInterpretationQuestionIndex || (index === activeInterpretationQuestionIndex && isInterpretationAnswerConfirmed)) {
+            box.classList.add("completed");
+        } else if (index === activeInterpretationQuestionIndex) {
+            box.classList.add("current");
+        }
+        progress.appendChild(box);
+    });
+}
+
+function renderInterpretationQuestion() {
+    const set = getActiveInterpretationSet();
+    if (!set) return;
+    
+    const question = set.questions[activeInterpretationQuestionIndex];
+    const sentence = document.getElementById("interpretationSentence");
+    const prompt = document.getElementById("interpretationPrompt");
+    const feedback = document.getElementById("interpretationFeedback");
+    const confirmBtn = document.getElementById("confirmInterpretationBtn");
+    const clearResult = document.getElementById("interpretationClearResult");
+    
+    isInterpretationAnswerConfirmed = false;
+    renderInterpretationProgress(set);
+    prompt.textContent = question.prompt;
+    feedback.textContent = "";
+    clearResult.classList.add("hidden");
+    clearResult.innerHTML = "";
+    confirmBtn.classList.remove("hidden");
+    confirmBtn.disabled = false;
+    confirmBtn.textContent = "確定";
+    
+    sentence.innerHTML = "";
+    sentence.style.setProperty("--word-columns", String(Math.min(set.sentenceWords.length, 5)));
+    set.sentenceWords.forEach((word, index) => {
+        const tile = document.createElement("button");
+        tile.className = index === set.sentenceWords.length - 1 && set.punctuation ? "word-tile has-period" : "word-tile";
+        tile.type = "button";
+        tile.textContent = word;
+        tile.dataset.wordIndex = String(index);
+        tile.onclick = () => {
+            if (isInterpretationAnswerConfirmed) return;
+            tile.classList.toggle("selected");
+            feedback.textContent = "";
+        };
+        sentence.appendChild(tile);
+    });
+}
+
+function startInterpretationQuestionSet(setId) {
+    activeInterpretationSetId = setId;
+    activeInterpretationQuestionIndex = 0;
+    isInterpretationAnswerConfirmed = false;
+    interpretationAnswerMemory = {};
+    renderInterpretationQuestion();
+    showInterpretationPanel("pattern1QuestionView");
+}
+
+function getSelectedInterpretationIndexes() {
+    return Array.from(document.querySelectorAll("#interpretationSentence .word-tile.selected"))
+        .map(tile => Number(tile.dataset.wordIndex))
+        .sort((a, b) => a - b);
+}
+
+function isSameIndexSet(selected, correct) {
+    if (selected.length !== correct.length) return false;
+    const sortedCorrect = [...correct].sort((a, b) => a - b);
+    return selected.every((value, index) => value === sortedCorrect[index]);
+}
+
+function isPartialMultiAnswer(selected, correct) {
+    if (correct.length <= 1 || selected.length === 0 || selected.length >= correct.length) return false;
+    return selected.every(value => correct.includes(value));
+}
+
+function getAvailableCorrectOptions(question) {
+    if (question.correctOptions) {
+        const usedIds = interpretationAnswerMemory[question.rememberKey] || [];
+        return question.correctOptions.filter(option => !usedIds.includes(option.id));
+    }
+    return [{ id: "", indexes: question.correctIndexes }];
+}
+
+function findMatchedCorrectOption(selected, question) {
+    return getAvailableCorrectOptions(question).find(option => isSameIndexSet(selected, option.indexes));
+}
+
+function isPartialAvailableMultiAnswer(selected, question) {
+    return getAvailableCorrectOptions(question).some(option => isPartialMultiAnswer(selected, option.indexes));
+}
+
+function rememberCorrectOption(question, option) {
+    if (!question.rememberKey || !option.id) return;
+    const usedIds = interpretationAnswerMemory[question.rememberKey] || [];
+    if (!usedIds.includes(option.id)) {
+        interpretationAnswerMemory[question.rememberKey] = [...usedIds, option.id];
+    }
+}
+
+function showInterpretationClearResult() {
+    const set = getActiveInterpretationSet();
+    const clearResult = document.getElementById("interpretationClearResult");
+    if (!set || !set.clearResult) return;
+    
+    const tokenHtml = set.clearResult.tokens.map(token => {
+        const displayText = token.wrap ? `(${token.text})` : token.text;
+        return `
+            <span class="interpretation-result-token">
+                <span class="interpretation-result-word">${displayText}</span>
+                <span class="interpretation-result-label">${token.label}</span>
+            </span>
+        `;
+    }).join("");
+    
+    clearResult.innerHTML = `
+        <div class="interpretation-result-section">
+            <div class="interpretation-result-title">英文(解釈つき)</div>
+            <div class="interpretation-result-line">${tokenHtml}<span class="interpretation-result-period">.</span></div>
+        </div>
+        <div class="interpretation-result-section">
+            <div class="interpretation-result-title">和訳</div>
+            <div class="interpretation-translation">${set.clearResult.translation}</div>
+        </div>
+    `;
+    clearResult.classList.remove("hidden");
+    document.getElementById("confirmInterpretationBtn").classList.add("hidden");
+}
+
+function confirmInterpretationAnswer() {
+    const set = getActiveInterpretationSet();
+    if (!set) return;
+
+    if (isInterpretationAnswerConfirmed) {
+        if (activeInterpretationQuestionIndex < set.questions.length - 1) {
+            activeInterpretationQuestionIndex += 1;
+            renderInterpretationQuestion();
+        } else {
+            showInterpretationClearResult();
+        }
+        return;
+    }
+    
+    const question = set.questions[activeInterpretationQuestionIndex];
+    const feedback = document.getElementById("interpretationFeedback");
+    const confirmBtn = document.getElementById("confirmInterpretationBtn");
+    const selectedIndexes = getSelectedInterpretationIndexes();
+    const matchedOption = findMatchedCorrectOption(selectedIndexes, question);
+    
+    if (!matchedOption) {
+        feedback.textContent = isPartialAvailableMultiAnswer(selectedIndexes, question) ? "まだあるよ！" : "違うよ！";
+        return;
+    }
+    rememberCorrectOption(question, matchedOption);
+
+    isInterpretationAnswerConfirmed = true;
+    renderInterpretationProgress(set);
+    document.querySelectorAll("#interpretationSentence .word-tile").forEach(tile => {
+        tile.disabled = true;
+    });
+    document.querySelectorAll("#interpretationSentence .word-tile.selected").forEach(tile => {
+        tile.classList.add("correct-answer");
+    });
+
+    if (activeInterpretationQuestionIndex < set.questions.length - 1) {
+        feedback.textContent = "正解！";
+        confirmBtn.textContent = "次へ";
+        return;
+    }
+    
+    feedback.textContent = "クリア！";
+    confirmBtn.disabled = !set.clearResult;
+    confirmBtn.textContent = "クリア";
 }
 
 // ==================== 音声合成 ====================
@@ -1383,7 +1657,26 @@ document.getElementById("selectGrammarBtn").onclick = () => {
     isGrammarMode = true;
     showView("grammarModeSelection");
 };
+document.getElementById("selectInterpretationGameBtn").onclick = () => {
+    isGrammarMode = false;
+    showInterpretationPanel("interpretationStageSelect");
+    showView("interpretationGame");
+};
 document.getElementById("backToModeBtn").onclick = () => showView("modeSelection");
+document.getElementById("backToModeFromInterpretationBtn").onclick = () => showView("modeSelection");
+document.getElementById("selectSyntaxStageBtn").onclick = () => openSyntaxStage("stage1");
+document.getElementById("selectSyntaxStage2Btn").onclick = () => openSyntaxStage("stage2");
+document.getElementById("backToInterpretationStagesBtn").onclick = () => showInterpretationPanel("interpretationStageSelect");
+document.getElementById("backToSyntaxStageBtn").onclick = () => showInterpretationPanel("syntaxStageView");
+document.getElementById("selectPattern1Btn").onclick = () => {
+    startInterpretationQuestionSet(getPatternSetId(1));
+};
+["selectPattern2Btn", "selectPattern3Btn", "selectPattern4Btn", "selectPattern5Btn"].forEach(id => {
+    document.getElementById(id).onclick = () => {
+        document.getElementById("syntaxStageStatus").textContent = "この文型は準備中です";
+    };
+});
+document.getElementById("confirmInterpretationBtn").onclick = confirmInterpretationAnswer;
 
 // 文法モード選択
 document.getElementById("selectGrammarProblemBtn").onclick = () => showView("grammarTypeSelection");

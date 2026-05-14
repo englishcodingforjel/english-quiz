@@ -257,6 +257,154 @@ body.scroll-lock { overflow: hidden; position: fixed; width: 100%; height: 100%;
 .disabled-mode { opacity: 0.5; cursor: not-allowed; background: var(--border) !important; color: var(--text-muted) !important; }
 .hidden { display: none !important; }
 
+/* 英文解釈ゲーム */
+.interpretation-stage-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    width: 100%;
+    margin-top: 12px;
+}
+.interpretation-progress-boxes {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin: 4px 0 14px;
+}
+.interpretation-progress-box {
+    width: 34px;
+    height: 34px;
+    border-radius: 7px;
+    border: 2px solid var(--border);
+    background: var(--progress-bg);
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+    font-weight: 700;
+    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
+}
+.interpretation-progress-box.current {
+    border-color: var(--blue);
+    color: var(--blue);
+    background: var(--card);
+    transform: scale(1.05);
+}
+.interpretation-progress-box.completed {
+    border-color: var(--green);
+    background: var(--green);
+    color: white;
+}
+.interpretation-sentence {
+    display: grid;
+    grid-template-columns: repeat(var(--word-columns, 4), minmax(0, 1fr));
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin: 24px 0 8px;
+    font-size: 1rem;
+}
+.interpretation-prompt {
+    width: 100%;
+    margin-top: 18px;
+    padding: 14px;
+    border-radius: 12px;
+    background: var(--blue-light);
+    color: var(--text);
+    font-size: 1.05rem;
+    font-weight: 700;
+}
+.word-tile {
+    width: 100%;
+    min-width: 0;
+    min-height: 48px;
+    padding: 8px 6px;
+    border: 2px solid var(--border);
+    border-radius: 10px;
+    background: var(--card);
+    color: var(--text);
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+    overflow-wrap: anywhere;
+    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
+}
+.word-tile.has-period::after {
+    content: ".";
+}
+.word-tile:hover {
+    border-color: var(--green);
+}
+.word-tile.selected {
+    background: var(--green);
+    border-color: var(--green);
+    color: white;
+}
+.word-tile:disabled {
+    cursor: default;
+    opacity: 1;
+}
+.word-tile.correct-answer {
+    box-shadow: 0 0 0 3px var(--green-light);
+}
+.word-tile:active {
+    transform: scale(0.96);
+}
+.interpretation-clear-result {
+    width: 100%;
+    margin-top: 18px;
+    padding: 14px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--card);
+    text-align: left;
+}
+.interpretation-result-section + .interpretation-result-section {
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px dashed var(--border);
+}
+.interpretation-result-title {
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-size: 0.85rem;
+    font-weight: 700;
+}
+.interpretation-result-line {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 8px;
+    color: var(--text);
+    font-size: 1rem;
+    line-height: 1.2;
+}
+.interpretation-result-token {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+.interpretation-result-word {
+    font-weight: 700;
+}
+.interpretation-result-label {
+    min-height: 1em;
+    color: var(--text-muted);
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+.interpretation-result-period {
+    font-weight: 700;
+}
+.interpretation-translation {
+    color: var(--text);
+    font-size: 0.98rem;
+    line-height: 1.6;
+}
+
 /* 苦手設定エリア */
 .weak-setting-box { 
     width: 100%; 

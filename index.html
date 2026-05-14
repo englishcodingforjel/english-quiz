@@ -42,6 +42,9 @@
                 <button id="selectGrammarBtn" class="mode-card">
                     <span class="mode-icon">✍️</span><br>文法
                 </button>
+                <button id="selectInterpretationGameBtn" class="mode-card">
+                    <span class="mode-icon">🎮</span><br>英文解釈ゲーム
+                </button>
             </div>
             
             <div class="announcement-box">
@@ -188,6 +191,63 @@
                 <ul id="wrongList"></ul>
             </div>
             <button id="restartBtn" class="primary">設定へ</button>
+        </section>
+
+        <section id="interpretationGameView" class="card hidden">
+            <div id="interpretationStageSelect">
+                <h3>英文解釈ゲーム</h3>
+                <div class="interpretation-stage-grid">
+                    <button id="selectSyntaxStageBtn" class="mode-card">
+                        <span class="mode-icon">①</span><br>ステージ1<br>文型
+                    </button>
+                    <button id="selectSyntaxStage2Btn" class="mode-card">
+                        <span class="mode-icon">②</span><br>ステージ2<br>文型
+                    </button>
+                    <button class="mode-card disabled-mode"><span class="mode-icon">③</span><br>ステージ3<br><small>(準備中)</small></button>
+                    <button class="mode-card disabled-mode"><span class="mode-icon">④</span><br>ステージ4<br><small>(準備中)</small></button>
+                    <button class="mode-card disabled-mode"><span class="mode-icon">⑤</span><br>ステージ5<br><small>(準備中)</small></button>
+                    <button class="mode-card disabled-mode"><span class="mode-icon">⑥</span><br>ステージ6<br><small>(準備中)</small></button>
+                    <button class="mode-card disabled-mode"><span class="mode-icon">⑦</span><br>ステージ7<br><small>(準備中)</small></button>
+                    <button class="mode-card disabled-mode"><span class="mode-icon">⑧</span><br>ステージ8<br><small>(準備中)</small></button>
+                    <button class="mode-card disabled-mode"><span class="mode-icon">⑨</span><br>ステージ9<br><small>(準備中)</small></button>
+                    <button class="mode-card disabled-mode"><span class="mode-icon">⑩</span><br>ステージ10<br><small>(準備中)</small></button>
+                </div>
+                <button id="backToModeFromInterpretationBtn" class="secondary" style="margin-top: 15px;">戻る</button>
+            </div>
+
+            <div id="syntaxStageView" class="hidden">
+                <h3 id="syntaxStageTitle">ステージ1：文型</h3>
+                <div class="interpretation-stage-grid">
+                    <button id="selectPattern1Btn" class="mode-card">
+                        <span class="mode-icon">SV</span><br>第1文型
+                    </button>
+                    <button id="selectPattern2Btn" class="mode-card">
+                        <span class="mode-icon">SVC</span><br>第2文型
+                    </button>
+                    <button id="selectPattern3Btn" class="mode-card">
+                        <span class="mode-icon">SVO</span><br>第3文型
+                    </button>
+                    <button id="selectPattern4Btn" class="mode-card">
+                        <span class="mode-icon">SVOO</span><br>第4文型
+                    </button>
+                    <button id="selectPattern5Btn" class="mode-card">
+                        <span class="mode-icon">SVOC</span><br>第5文型
+                    </button>
+                </div>
+                <p id="syntaxStageStatus" class="status"></p>
+                <button id="backToInterpretationStagesBtn" class="secondary" style="margin-top: 15px;">戻る</button>
+            </div>
+
+            <div id="pattern1QuestionView" class="hidden">
+                <h3>第1文型</h3>
+                <div id="interpretationProgress" class="progress-info"></div>
+                <div id="interpretationPrompt" class="interpretation-prompt"></div>
+                <div id="interpretationSentence" class="interpretation-sentence" aria-label="英文をタップ"></div>
+                <p id="interpretationFeedback" class="status"></p>
+                <div id="interpretationClearResult" class="interpretation-clear-result hidden"></div>
+                <button id="confirmInterpretationBtn" class="primary">確定</button>
+                <button id="backToSyntaxStageBtn" class="secondary" style="margin-top: 15px;">戻る</button>
+            </div>
         </section>
 
         <!-- 文法用ビュー -->
