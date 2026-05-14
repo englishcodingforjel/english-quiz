@@ -128,6 +128,99 @@ const INTERPRETATION_QUESTION_SETS = {
             translation: "彼女は優しい"
         }
     },
+    stage1Pattern3: {
+        sentenceWords: ["I", "ate", "ramen", "yesterday"],
+        punctuation: ".",
+        questions: [
+            {
+                prompt: "動詞はどれか？",
+                correctIndexes: [1]
+            },
+            {
+                prompt: "主語はどれか？",
+                correctIndexes: [0]
+            },
+            {
+                prompt: "目的語はどれか？",
+                correctIndexes: [2]
+            },
+            {
+                prompt: "Mを選ぶ",
+                correctIndexes: [3]
+            }
+        ],
+        clearResult: {
+            tokens: [
+                { text: "I", label: "s" },
+                { text: "ate", label: "v" },
+                { text: "ramen", label: "o" },
+                { text: "yesterday", label: "m" }
+            ],
+            translation: "私は昨日ラーメンを食べた"
+        }
+    },
+    stage1Pattern4: {
+        sentenceWords: ["I", "gave", "her", "a", "flower"],
+        punctuation: ".",
+        questions: [
+            {
+                prompt: "動詞はどれか？",
+                correctIndexes: [1]
+            },
+            {
+                prompt: "主語はどれか？",
+                correctIndexes: [0]
+            },
+            {
+                prompt: "目的語1はどれか？",
+                correctIndexes: [2]
+            },
+            {
+                prompt: "目的語2はどれか？",
+                correctIndexes: [3, 4]
+            }
+        ],
+        clearResult: {
+            tokens: [
+                { text: "I", label: "s" },
+                { text: "gave", label: "v" },
+                { text: "her", label: "o1" },
+                { text: "a flower", label: "o2" }
+            ],
+            translation: "私は彼女に花をあげた"
+        }
+    },
+    stage1Pattern5: {
+        sentenceWords: ["This", "story", "made", "me", "sad"],
+        punctuation: ".",
+        questions: [
+            {
+                prompt: "動詞はどれか？",
+                correctIndexes: [2]
+            },
+            {
+                prompt: "主語はどれか？",
+                correctIndexes: [0, 1]
+            },
+            {
+                prompt: "目的語はどれか？",
+                correctIndexes: [3]
+            },
+            {
+                prompt: "補語はどれか？",
+                correctIndexes: [4]
+            }
+        ],
+        clearResult: {
+            tokens: [
+                { text: "This story", label: "s" },
+                { text: "made", label: "v" },
+                { text: "me", label: "o" },
+                { text: "sad", label: "c" }
+            ],
+            translation: "この物語は私を悲しくさせた。"
+        }
+    },
     stage2Pattern1: {
         sentenceWords: ["The", "young", "office", "worker", "walked", "quickly", "to", "the", "train", "station"],
         punctuation: ".",
@@ -199,6 +292,122 @@ const INTERPRETATION_QUESTION_SETS = {
                 { text: "this rainy morning", label: "m", wrap: true }
             ],
             translation: "キッチンの淹れたてのコーヒーは、この雨の朝、素晴らしい香りがした。"
+        }
+    },
+    stage2Pattern3: {
+        sentenceWords: ["My", "neighbor", "carefully", "planted", "some", "colorful", "flowers", "in", "the", "small", "garden"],
+        punctuation: ".",
+        questions: [
+            {
+                prompt: "動詞はどれか？",
+                correctIndexes: [3]
+            },
+            {
+                prompt: "主語はどれか？",
+                correctIndexes: [0, 1]
+            },
+            {
+                prompt: "目的語はどれか？",
+                correctIndexes: [4, 5, 6]
+            },
+            {
+                prompt: "Mを選ぶ",
+                rememberKey: "stage2Pattern3M",
+                correctOptions: [
+                    { id: "carefully", indexes: [2] },
+                    { id: "inTheSmallGarden", indexes: [7, 8, 9, 10] }
+                ]
+            },
+            {
+                prompt: "Mを選ぶ",
+                rememberKey: "stage2Pattern3M",
+                correctOptions: [
+                    { id: "carefully", indexes: [2] },
+                    { id: "inTheSmallGarden", indexes: [7, 8, 9, 10] }
+                ]
+            }
+        ],
+        clearResult: {
+            tokens: [
+                { text: "My neighbor", label: "s" },
+                { text: "carefully", label: "m" },
+                { text: "planted", label: "v" },
+                { text: "some colorful flowers", label: "o" },
+                { text: "in the small garden", label: "m", wrap: true }
+            ],
+            translation: "私の隣人は、小さな庭に色鮮やかな花を丁寧に植えた。"
+        }
+    },
+    stage2Pattern4: {
+        sentenceWords: ["My", "older", "brother", "bought", "me", "a", "delicious", "chocolate", "cake", "yesterday"],
+        punctuation: ".",
+        questions: [
+            {
+                prompt: "動詞はどれか？",
+                correctIndexes: [3]
+            },
+            {
+                prompt: "主語はどれか？",
+                correctIndexes: [0, 1, 2]
+            },
+            {
+                prompt: "目的語1はどれか？",
+                correctIndexes: [4]
+            },
+            {
+                prompt: "目的語2はどれか？",
+                correctIndexes: [5, 6, 7, 8]
+            },
+            {
+                prompt: "Mを選ぶ",
+                correctIndexes: [9]
+            }
+        ],
+        clearResult: {
+            tokens: [
+                { text: "My older brother", label: "s" },
+                { text: "bought", label: "v" },
+                { text: "me", label: "o1" },
+                { text: "a delicious chocolate cake", label: "o2" },
+                { text: "yesterday", label: "m" }
+            ],
+            translation: "私の兄が、昨日私に美味しいチョコケーキを買ってくれた。"
+        }
+    },
+    stage2Pattern5: {
+        sentenceWords: ["He", "made", "his", "mistake", "in", "the", "report", "secret"],
+        punctuation: ".",
+        questions: [
+            {
+                prompt: "動詞はどれか？",
+                correctIndexes: [1]
+            },
+            {
+                prompt: "主語はどれか？",
+                correctIndexes: [0]
+            },
+            {
+                prompt: "目的語はどれか？",
+                correctIndexes: [2, 3]
+            },
+            {
+                prompt: "Mを選ぶ",
+                correctIndexes: [4, 5, 6]
+            },
+            {
+                prompt: "補語はどれか？",
+                correctIndexes: [7]
+            }
+        ],
+        clearResult: {
+            tokens: [
+                { text: "He", label: "s" },
+                { text: "made", label: "v" },
+                { text: "his mistake", label: "o" },
+                { text: "in the report", label: "m", wrap: true },
+                { text: "secret", label: "c" }
+            ],
+            translation: "彼は報告書の中のミスを隠した。"
         }
     }
 };
@@ -655,11 +864,11 @@ function renderInterpretationQuestion() {
     
     sentence.innerHTML = "";
     const wordCount = set.sentenceWords.length;
-    const columns = wordCount <= 5 ? wordCount : Math.ceil(wordCount / 2);
+    const columns = wordCount <= 5 ? wordCount : Math.ceil(wordCount / 3);
     sentence.style.setProperty("--word-columns", String(columns));
-    sentence.style.setProperty("--word-font-size", wordCount > 10 ? "0.62rem" : wordCount > 8 ? "0.72rem" : "0.86rem");
-    sentence.style.setProperty("--word-min-height", wordCount > 8 ? "40px" : "48px");
-    sentence.style.setProperty("--word-padding-x", wordCount > 8 ? "2px" : "3px");
+    sentence.style.setProperty("--word-font-size", wordCount > 10 ? "0.82rem" : wordCount > 8 ? "0.86rem" : "0.9rem");
+    sentence.style.setProperty("--word-min-height", wordCount > 8 ? "42px" : "48px");
+    sentence.style.setProperty("--word-padding-x", wordCount > 8 ? "4px" : "6px");
     set.sentenceWords.forEach((word, index) => {
         const tile = document.createElement("button");
         tile.className = index === set.sentenceWords.length - 1 && set.punctuation ? "word-tile has-period" : "word-tile";
@@ -1758,11 +1967,30 @@ document.getElementById("selectPattern2Btn").onclick = () => {
         document.getElementById("syntaxStageStatus").textContent = "この文型は準備中です";
     }
 };
-["selectPattern3Btn", "selectPattern4Btn", "selectPattern5Btn"].forEach(id => {
-    document.getElementById(id).onclick = () => {
+document.getElementById("selectPattern3Btn").onclick = () => {
+    const setId = getPatternSetId(3);
+    if (INTERPRETATION_QUESTION_SETS[setId]) {
+        startInterpretationQuestionSet(setId);
+    } else {
         document.getElementById("syntaxStageStatus").textContent = "この文型は準備中です";
-    };
-});
+    }
+};
+document.getElementById("selectPattern4Btn").onclick = () => {
+    const setId = getPatternSetId(4);
+    if (INTERPRETATION_QUESTION_SETS[setId]) {
+        startInterpretationQuestionSet(setId);
+    } else {
+        document.getElementById("syntaxStageStatus").textContent = "この文型は準備中です";
+    }
+};
+document.getElementById("selectPattern5Btn").onclick = () => {
+    const setId = getPatternSetId(5);
+    if (INTERPRETATION_QUESTION_SETS[setId]) {
+        startInterpretationQuestionSet(setId);
+    } else {
+        document.getElementById("syntaxStageStatus").textContent = "この文型は準備中です";
+    }
+};
 document.getElementById("confirmInterpretationBtn").onclick = confirmInterpretationAnswer;
 
 // 文法モード選択
