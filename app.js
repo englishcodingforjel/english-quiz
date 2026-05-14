@@ -92,7 +92,15 @@ const INTERPRETATION_QUESTION_SETS = {
                 prompt: "Mを選ぶ",
                 correctIndexes: [2, 3]
             }
-        ]
+        ],
+        clearResult: {
+            tokens: [
+                { text: "I", label: "s" },
+                { text: "go", label: "v" },
+                { text: "to school", label: "m", wrap: true }
+            ],
+            translation: "私は学校に通っている。"
+        }
     },
     stage2Pattern1: {
         sentenceWords: ["The", "young", "office", "worker", "walked", "quickly", "to", "the", "train", "station"],
@@ -655,7 +663,13 @@ function rememberCorrectOption(question, option) {
 function showInterpretationClearResult() {
     const set = getActiveInterpretationSet();
     const clearResult = document.getElementById("interpretationClearResult");
-    if (!set || !set.clearResult) return;
+    if (!set) return;
+    if (!set.clearResult) {
+        clearResult.innerHTML = '<div class="interpretation-result-section"><div class="interpretation-result-title">リザルト</div><div class="interpretation-translation">リザルトは準備中です。</div></div>';
+        clearResult.classList.remove("hidden");
+        document.getElementById("confirmInterpretationBtn").classList.add("hidden");
+        return;
+    }
     
     const tokenHtml = set.clearResult.tokens.map(token => {
         const displayText = token.wrap ? `(${token.text})` : token.text;
@@ -723,7 +737,7 @@ function confirmInterpretationAnswer() {
     }
     
     feedback.textContent = "クリア！";
-    confirmBtn.disabled = !set.clearResult;
+    confirmBtn.disabled = false;
     confirmBtn.textContent = "クリア";
 }
 
