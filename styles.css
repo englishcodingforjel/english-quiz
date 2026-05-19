@@ -419,6 +419,24 @@ body.scroll-lock { overflow: hidden; position: fixed; width: 100%; height: 100%;
     margin-bottom: 12px; 
     border: 1px solid var(--border);
 }
+.weak-review-settings .normal-vocab-only,
+.weak-review-settings .weak-mode-toggle {
+    display: none !important;
+}
+.weak-review-settings .weak-setting-box .rangeRow {
+    justify-content: center;
+}
+.weak-review-note {
+    display: none;
+    margin: 4px 0 12px;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    line-height: 1.6;
+    text-align: left;
+}
+.weak-review-settings .weak-review-note {
+    display: block;
+}
 .weak-mode-label { 
     display: flex; 
     align-items: center; 

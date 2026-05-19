@@ -58,17 +58,31 @@
             </div>
         </section>
 
+        <section id="vocabStudySelectionView" class="card hidden">
+            <h3>単語学習を選択</h3>
+            <div class="mode-grid">
+                <button id="selectNormalVocabBtn" class="mode-card">
+                    <span class="mode-icon">📖</span><br>単語学習
+                </button>
+                <button id="selectWeakReviewBtn" class="mode-card">
+                    <span class="mode-icon">🔥</span><br>苦手単語の復習<br>
+                    <small><span id="weakReviewCount">0</span>語</small>
+                </button>
+            </div>
+            <button id="backToModeFromVocabStudyBtn" class="secondary" style="margin-top: 15px;">戻る</button>
+        </section>
+
         <section id="menuView" class="card hidden">
             <h3 style="margin:0 0 10px;">単語学習設定</h3>
             <div class="weak-setting-box">
                 <div class="rangeRow">
                     <button id="openWeakListBtn" class="secondary small">苦手単語一覧(<span id="weakCount">0</span>)</button>
-                    <button id="clearHistoryBtn" class="secondary danger small">履歴削除</button>
+                    <button id="clearHistoryBtn" class="secondary danger small normal-vocab-only">履歴削除</button>
                 </div>
             </div>
 
-            <label class="label">教材</label>
-            <select id="difficultySelect" class="select">
+            <label class="label normal-vocab-only">教材</label>
+            <select id="difficultySelect" class="select normal-vocab-only">
                 <option value="" selected disabled>教材を選択</option>
                 <option value="grit2500.csv">GRIT 2500</option>
                 <option value="expre1.csv">単熟語EX準１級(1~2412)</option>
@@ -79,7 +93,7 @@
                 <option value="passtanpre1.csv">でる順パス単準１級(1~1900)</option>
             </select>
 
-            <div class="rangeBox">
+            <div class="rangeBox normal-vocab-only">
                 <label class="label">範囲指定</label>
                 <div class="rangeRow">
                     <input id="rangeStart" type="number" inputmode="numeric" pattern="[0-9]*" class="select" placeholder="開始番号">
@@ -90,7 +104,14 @@
             <div class="rangeRow">
                 <div style="flex:1;">
                     <label class="label">出題数</label>
-                    <input id="countInput" type="number" inputmode="numeric" pattern="[0-9]*" class="select" value="20">
+                    <select id="countInput" class="select">
+                        <option value="5">5問</option>
+                        <option value="10">10問</option>
+                        <option value="20" selected>20問</option>
+                        <option value="30">30問</option>
+                        <option value="50">50問</option>
+                        <option value="100">100問</option>
+                    </select>
                 </div>
                 <div style="flex:1;">
                     <label class="label">制限時間</label>
@@ -103,7 +124,7 @@
             </div>
             
             <div class="toggle-row">
-                <label class="setting-toggle">
+                <label class="setting-toggle weak-mode-toggle">
                     <input type="checkbox" id="weakModeCheck">
                     <span class="setting-slider"></span>
                     <span>苦手モード</span>
@@ -115,7 +136,7 @@
                 </label>
             </div>
 
-            <div class="quiz-mode-box">
+            <div class="quiz-mode-box normal-vocab-only">
                 <label class="label">出題方向</label>
                 <div class="segmented-control">
                     <button type="button" class="segment-btn active" data-vocab-direction="enToJa">英語 → 日本語</button>
@@ -130,9 +151,11 @@
                 </div>
             </div>
 
+            <p class="weak-review-note">同じ単語を3回連続で正解すると、その単語が苦手単語一覧から自動的に削除されます。手動でも削除できます。</p>
             <button id="startBtn" class="primary">開始</button>
+            <button id="backToVocabStudySelectionBtn" class="secondary" style="margin-top: 10px;">戻る</button>
 
-            <div class="guide-box">
+            <div class="guide-box normal-vocab-only">
                 <h4 style="color:var(--red);">⚠️ ご利用にあたって</h4>
                 <p style="font-size: 0.75rem; color: var(--text-muted); line-height: 1.5; margin-bottom: 10px; text-align: left;">
                     本アプリは『ターゲット1900』『ターゲット1400』等の公式アプリではありません。
@@ -348,7 +371,14 @@
             </select>
 
             <label class="label">出題数</label>
-            <input id="grammarCountInput" type="number" inputmode="numeric" pattern="[0-9]*" class="select" value="20">
+            <select id="grammarCountInput" class="select">
+                <option value="5">5問</option>
+                <option value="10">10問</option>
+                <option value="20" selected>20問</option>
+                <option value="30">30問</option>
+                <option value="50">50問</option>
+                <option value="100">100問</option>
+            </select>
             
             <button id="grammarStartBtn" class="primary">開始</button>
 

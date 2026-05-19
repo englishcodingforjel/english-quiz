@@ -22,6 +22,7 @@ const ANSWER_MODE_KEY = "answerMode";
 const views = {
     password: document.getElementById("passwordView"),
     modeSelection: document.getElementById("modeSelectionView"),
+    vocabStudySelection: document.getElementById("vocabStudySelectionView"),
     menu: document.getElementById("menuView"),
     quiz: document.getElementById("quizView"),
     result: document.getElementById("resultView"),
@@ -57,6 +58,7 @@ let quizEntries = [];
 let currentIndex = 0;
 let correctCount = 0;
 let wrongAnswers = [];
+let graduatedWeakWords = [];
 let answerHistory = [];
 let currentChoicesData = [];
 let answered = false;
@@ -65,6 +67,7 @@ let timeLimit = 0;
 let csvCache = {};
 let announcements = [];
 let isGrammarMode = false;
+let isWeakReviewSettings = false;
 let currentGrammarCategory = "";
 let currentGrammarDifficulty = "standard";
 let vocabDirection = localStorage.getItem(VOCAB_DIRECTION_KEY) || "enToJa";
@@ -458,10 +461,24 @@ function getWeakWords() {
  */
 function saveWeakWord(id) {
     const weakIds = getWeakWords();
-    if (!weakIds.includes(id)) {
+    if (!weakIds.some(wid => String(wid) === String(id))) {
         weakIds.push(id);
         localStorage.setItem("weakWords", JSON.stringify(weakIds));
     }
+}
+
+function removeWeakWord(id, shouldClearStats = false) {
+    const targetId = String(id);
+    const weakIds = getWeakWords().filter(wid => String(wid) !== targetId);
+    localStorage.setItem("weakWords", JSON.stringify(weakIds));
+    
+    if (shouldClearStats) {
+        const stats = getWeakWordStats();
+        delete stats[targetId];
+        saveWeakWordStats(stats);
+    }
+    
+    updateWeakCountDisplay();
 }
 
 /**
@@ -514,6 +531,7 @@ function recordWordAttempt(id, isCorrect) {
     
     stats[key] = current;
     saveWeakWordStats(stats);
+    return current;
 }
 
 /**
@@ -794,7 +812,8 @@ function showView(name) {
     progressBarContainer.classList.toggle("hidden", name !== "quiz");
     updateScrollLock(name === "quiz");
     
-    if (name === "menu") updateWeakCountDisplay();
+    if (name === "menu") updateVocabMenuMode();
+    if (name === "menu" || name === "vocabStudySelection") updateWeakCountDisplay();
     if (name === "modeSelection") renderAnnouncements();
     
     updateTitle(name);
@@ -1134,7 +1153,8 @@ function handleTypingAnswer(isCorrect, isNearMiss = false) {
     const dot = document.getElementById(`dot-${currentIndex}`);
     const correctMeaning = formatMeaning(entry);
     
-    recordWordAttempt(entry.number, isCorrect);
+    const wordStat = recordWordAttempt(entry.number, isCorrect);
+    graduateWeakWordIfReady(entry, wordStat, isCorrect);
     answerHistory.push({
         english: entry.english,
         meaning: correctMeaning,
@@ -1175,6 +1195,19 @@ function handleTypingAnswer(isCorrect, isNearMiss = false) {
  * @param {Object} entry - 問題エントリ
  * @param {HTMLElement} dot - 進捗ドット要素
  */
+function graduateWeakWordIfReady(entry, stat, isCorrect) {
+    if (!isWeakReviewSettings || !isCorrect || !stat || stat.streak < 3) return;
+    
+    removeWeakWord(entry.number);
+    if (!graduatedWeakWords.some(item => item.number === entry.number)) {
+        graduatedWeakWords.push({
+            number: entry.number,
+            english: entry.english,
+            meaning: formatMeaning(entry)
+        });
+    }
+}
+
 function handleGrammarAnswer(idx, entry, dot) {
     const correctAnswer = entry.correct;
     const selectedAnswer = idx !== -1 ? currentChoicesData[idx] : null;
@@ -1204,7 +1237,8 @@ function handleVocabAnswer(idx, entry, dot) {
     const correctIdx = currentChoicesData.findIndex(c => c.entry === entry);
     const isCorrect = idx !== -1 && currentChoicesData[idx].entry === entry;
     const correctMeaning = currentChoicesData[correctIdx].display;
-    recordWordAttempt(entry.number, isCorrect);
+    const wordStat = recordWordAttempt(entry.number, isCorrect);
+    graduateWeakWordIfReady(entry, wordStat, isCorrect);
     answerHistory.push({
         english: entry.english,
         meaning: correctMeaning,
@@ -1608,6 +1642,32 @@ function createProgressDots() {
     });
 }
 
+function getVocabFileNames() {
+    const fileSelect = document.getElementById("difficultySelect");
+    if (!fileSelect) return [];
+    
+    return Array.from(fileSelect.options)
+        .map(option => option.value)
+        .filter(value => value && value.endsWith(".csv"));
+}
+
+async function loadVocabEntriesForQuiz(fileName, shouldLoadAllFiles) {
+    if (!shouldLoadAllFiles) {
+        return loadCsv(fileName, false, false);
+    }
+    
+    const lists = await Promise.all(getVocabFileNames().map(async name => {
+        try {
+            return await loadCsv(name, false, false);
+        } catch (e) {
+            console.error(`${name} の読み込みに失敗しました:`, e);
+            return [];
+        }
+    }));
+    
+    return lists.flat();
+}
+
 /**
  * クイズを初期化
  */
@@ -1615,6 +1675,7 @@ function initQuiz() {
     currentIndex = 0;
     correctCount = 0;
     wrongAnswers = [];
+    graduatedWeakWords = [];
     answerHistory = [];
     createProgressDots();
     showView("quiz");
@@ -1636,7 +1697,8 @@ async function startVocabQuiz() {
     const originalText = btn.textContent;
     try {
         const file = document.getElementById("difficultySelect").value;
-        if (!file) {
+        const useWeakMode = document.getElementById("weakModeCheck").checked;
+        if (!file && !useWeakMode) {
             throw new Error("教材を選択してください。");
         }
         
@@ -1647,17 +1709,17 @@ async function startVocabQuiz() {
         clearInterval(timerInterval);
         
         timeLimit = parseInt(document.getElementById("timerSelect").value);
-        allEntries = await loadCsv(file, false, false);
+        allEntries = await loadVocabEntriesForQuiz(file, useWeakMode && (!file || isWeakReviewSettings));
         let data = allEntries;
         
         // 苦手モードフィルタ
-        if (document.getElementById("weakModeCheck").checked) {
+        if (useWeakMode) {
             vocabDirection = "enToJa";
             answerMode = "choice";
             localStorage.setItem(VOCAB_DIRECTION_KEY, vocabDirection);
             localStorage.setItem(ANSWER_MODE_KEY, answerMode);
             const weakIds = getWeakWords();
-            data = data.filter(item => weakIds.includes(item.number));
+            data = data.filter(item => weakIds.some(id => String(id) === String(item.number)));
             if (!data.length) throw new Error("苦手単語がありません。");
         } else {
             // 範囲フィルタ
@@ -1764,6 +1826,12 @@ function showResult() {
             li.innerHTML = `<strong>${answer.english}</strong> 正解: ${answer.meaning}`;
             list.appendChild(li);
         });
+        graduatedWeakWords.forEach(word => {
+            const li = document.createElement("li");
+            li.className = "review-correct";
+            li.innerHTML = `<strong>${word.english}</strong> 苦手単語を卒業しました`;
+            list.appendChild(li);
+        });
     } else if (wrongAnswers.length) {
         document.getElementById("reviewSection").classList.remove("hidden");
         wrongAnswers.forEach(w => {
@@ -1787,7 +1855,14 @@ function showResult() {
  * 苦手単語数のバッジ表示更新
  */
 function updateWeakCountDisplay() {
-    document.getElementById("weakCount").textContent = getWeakWords().length;
+    const weakCount = getWeakWords().length;
+    const weakCountEl = document.getElementById("weakCount");
+    const weakReviewCountEl = document.getElementById("weakReviewCount");
+    const weakReviewBtn = document.getElementById("selectWeakReviewBtn");
+    
+    if (weakCountEl) weakCountEl.textContent = weakCount;
+    if (weakReviewCountEl) weakReviewCountEl.textContent = weakCount;
+    if (weakReviewBtn) weakReviewBtn.classList.toggle("disabled-mode", weakCount === 0);
 }
 
 async function getEntriesForWeakList() {
@@ -1829,12 +1904,7 @@ async function getEntriesForWeakList() {
  * @param {number} id - 単語の番号
  */
 window.removeWeak = (id) => {
-    const weakIds = getWeakWords().filter(wid => wid !== id);
-    const stats = getWeakWordStats();
-    delete stats[String(id)];
-    localStorage.setItem("weakWords", JSON.stringify(weakIds));
-    saveWeakWordStats(stats);
-    updateWeakCountDisplay();
+    removeWeakWord(id, true);
     if (!document.getElementById("weakListModal").classList.contains("hidden")) {
         document.getElementById("openWeakListBtn").onclick();
     }
@@ -1923,6 +1993,28 @@ function handleBackToMenu() {
     }
 }
 
+function updateVocabMenuMode() {
+    const menu = document.getElementById("menuView");
+    if (!menu) return;
+    
+    menu.classList.toggle("weak-review-settings", isWeakReviewSettings);
+}
+
+function openVocabStudyMenu(useWeakReview) {
+    isGrammarMode = false;
+    isWeakReviewSettings = useWeakReview;
+    
+    const weakModeCheck = document.getElementById("weakModeCheck");
+    if (weakModeCheck) {
+        weakModeCheck.checked = useWeakReview;
+        if (typeof weakModeCheck.onchange === "function") {
+            weakModeCheck.onchange();
+        }
+    }
+    
+    showView("menu");
+}
+
 // ==================== イベントリスナー登録 ====================
 
 // パスワードログイン
@@ -1939,19 +2031,37 @@ document.getElementById("passwordBtn").onclick = () => {
 // モード選択遷移
 document.getElementById("selectVocabBtn").onclick = () => {
     isGrammarMode = false;
-    showView("menu");
+    showView("vocabStudySelection");
+};
+document.getElementById("selectNormalVocabBtn").onclick = () => openVocabStudyMenu(false);
+document.getElementById("selectWeakReviewBtn").onclick = () => {
+    if (getWeakWords().length === 0) {
+        alert("苦手単語はまだありません");
+        return;
+    }
+    openVocabStudyMenu(true);
 };
 document.getElementById("selectGrammarBtn").onclick = () => {
     isGrammarMode = true;
+    isWeakReviewSettings = false;
     showView("grammarModeSelection");
 };
 document.getElementById("selectInterpretationGameBtn").onclick = () => {
     isGrammarMode = false;
+    isWeakReviewSettings = false;
     showInterpretationPanel("interpretationStageSelect");
     showView("interpretationGame");
 };
-document.getElementById("backToModeBtn").onclick = () => showView("modeSelection");
-document.getElementById("backToModeFromInterpretationBtn").onclick = () => showView("modeSelection");
+document.getElementById("backToModeBtn").onclick = () => {
+    isWeakReviewSettings = false;
+    showView("modeSelection");
+};
+document.getElementById("backToVocabStudySelectionBtn").onclick = () => showView("vocabStudySelection");
+document.getElementById("backToModeFromVocabStudyBtn").onclick = () => showView("modeSelection");
+document.getElementById("backToModeFromInterpretationBtn").onclick = () => {
+    isWeakReviewSettings = false;
+    showView("modeSelection");
+};
 document.getElementById("selectSyntaxStageBtn").onclick = () => openSyntaxStage("stage1");
 document.getElementById("selectSyntaxStage2Btn").onclick = () => openSyntaxStage("stage2");
 document.getElementById("backToInterpretationStagesBtn").onclick = () => showInterpretationPanel("interpretationStageSelect");
