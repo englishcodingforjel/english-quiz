@@ -17,6 +17,8 @@ const WEAK_WORD_STATS_KEY = "weakWordStats";
 const VOICE_ENABLED_KEY = "voiceEnabled";
 const VOCAB_DIRECTION_KEY = "vocabDirection";
 const ANSWER_MODE_KEY = "answerMode";
+const VOCAB_SETTINGS_KEY = "vocabSettings";
+const GRAMMAR_SETTINGS_KEY = "grammarSettings";
 
 // ==================== DOM要素の取得 ====================
 const views = {
@@ -682,6 +684,73 @@ function initVocabModeControls() {
         weakModeCheck.onchange = render;
     }
     render();
+}
+
+function readStoredObject(key) {
+    try {
+        const value = JSON.parse(localStorage.getItem(key) || "{}");
+        return value && typeof value === "object" && !Array.isArray(value) ? value : {};
+    } catch (e) {
+        return {};
+    }
+}
+
+function setControlValue(id, value) {
+    const el = document.getElementById(id);
+    if (!el || value === undefined || value === null || value === "") return;
+    
+    if (el.tagName === "SELECT") {
+        const hasOption = Array.from(el.options).some(option => option.value === String(value));
+        if (!hasOption) return;
+    }
+    el.value = value;
+}
+
+function saveVocabSettings() {
+    const previous = readStoredObject(VOCAB_SETTINGS_KEY);
+    const difficulty = document.getElementById("difficultySelect").value || previous.difficulty || "";
+    const settings = {
+        difficulty,
+        rangeStart: document.getElementById("rangeStart").value,
+        rangeEnd: document.getElementById("rangeEnd").value,
+        count: document.getElementById("countInput").value,
+        timer: document.getElementById("timerSelect").value
+    };
+    localStorage.setItem(VOCAB_SETTINGS_KEY, JSON.stringify(settings));
+}
+
+function saveGrammarSettings() {
+    const settings = {
+        difficulty: document.getElementById("grammarDifficultySelect").value,
+        count: document.getElementById("grammarCountInput").value
+    };
+    localStorage.setItem(GRAMMAR_SETTINGS_KEY, JSON.stringify(settings));
+}
+
+function initSavedQuizSettings() {
+    const vocabSettings = readStoredObject(VOCAB_SETTINGS_KEY);
+    setControlValue("difficultySelect", vocabSettings.difficulty);
+    setControlValue("rangeStart", vocabSettings.rangeStart);
+    setControlValue("rangeEnd", vocabSettings.rangeEnd);
+    setControlValue("countInput", vocabSettings.count);
+    setControlValue("timerSelect", vocabSettings.timer);
+    
+    const grammarSettings = readStoredObject(GRAMMAR_SETTINGS_KEY);
+    setControlValue("grammarDifficultySelect", grammarSettings.difficulty);
+    setControlValue("grammarCountInput", grammarSettings.count);
+    
+    ["difficultySelect", "rangeStart", "rangeEnd", "countInput", "timerSelect"].forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        const eventName = el.tagName === "SELECT" ? "change" : "input";
+        el.addEventListener(eventName, saveVocabSettings);
+    });
+    
+    ["grammarDifficultySelect", "grammarCountInput"].forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.addEventListener("change", saveGrammarSettings);
+    });
 }
 
 /**
@@ -1732,6 +1801,7 @@ async function startVocabQuiz() {
     
     const originalText = btn.textContent;
     try {
+        saveVocabSettings();
         const file = document.getElementById("difficultySelect").value;
         const useWeakMode = document.getElementById("weakModeCheck").checked;
         if (!file && !useWeakMode) {
@@ -1792,6 +1862,7 @@ async function startGrammarQuiz() {
     
     const originalText = btn.textContent;
     try {
+        saveGrammarSettings();
         btn.disabled = true;
         btn.textContent = "読み込み中...";
         window.speechSynthesis.cancel();
@@ -2239,5 +2310,6 @@ document.getElementById("restartBtn").onclick = handleBackToMenu;
 // ==================== 初期化 ====================
 initTheme();
 initVoiceToggle();
+initSavedQuizSettings();
 initVocabModeControls();
 showView("password");
