@@ -455,26 +455,58 @@ function getWeakWords() {
     }
 }
 
+function getWordId(entry) {
+    return entry && entry.sourceFile ? `${entry.sourceFile}:${entry.number}` : String(entry.number);
+}
+
+function isLegacyWeakWordId(id) {
+    return !String(id).includes(":");
+}
+
+function getWeakQuizEntries(entries, weakIds) {
+    const exactIds = new Set(weakIds.filter(id => !isLegacyWeakWordId(id)).map(String));
+    const legacyIds = weakIds.filter(isLegacyWeakWordId).map(String);
+    const selected = [];
+    
+    entries.forEach(entry => {
+        if (exactIds.has(getWordId(entry))) selected.push(entry);
+    });
+    
+    legacyIds.forEach(id => {
+        const entry = entries.find(item => String(item.number) === id && !selected.includes(item));
+        if (entry) selected.push(entry);
+    });
+    
+    return selected;
+}
+
 /**
  * 苦手単語を保存
  * @param {number} id - 単語の番号
  */
 function saveWeakWord(id) {
-    const weakIds = getWeakWords();
-    if (!weakIds.some(wid => String(wid) === String(id))) {
-        weakIds.push(id);
+    const targetId = String(id);
+    const legacyId = targetId.includes(":") ? targetId.split(":").pop() : targetId;
+    const weakIds = getWeakWords().filter(wid => String(wid) !== legacyId);
+    if (!weakIds.some(wid => String(wid) === targetId)) {
+        weakIds.push(targetId);
         localStorage.setItem("weakWords", JSON.stringify(weakIds));
     }
 }
 
 function removeWeakWord(id, shouldClearStats = false) {
     const targetId = String(id);
-    const weakIds = getWeakWords().filter(wid => String(wid) !== targetId);
+    const legacyId = targetId.includes(":") ? targetId.split(":").pop() : targetId;
+    const weakIds = getWeakWords().filter(wid => {
+        const currentId = String(wid);
+        return currentId !== targetId && currentId !== legacyId;
+    });
     localStorage.setItem("weakWords", JSON.stringify(weakIds));
     
     if (shouldClearStats) {
         const stats = getWeakWordStats();
         delete stats[targetId];
+        delete stats[legacyId];
         saveWeakWordStats(stats);
     }
     
@@ -1086,6 +1118,7 @@ async function loadCsv(fileName, forceRefresh = false, isGrammar = false) {
                     const wrongChoices = parts.slice(3, 6).filter(c => c);
                     list.push({
                         number: num,
+                        sourceFile: fileName,
                         question: parts[1],
                         correct: correct,
                         choices: [correct, ...wrongChoices],
@@ -1100,6 +1133,7 @@ async function loadCsv(fileName, forceRefresh = false, isGrammar = false) {
                 if (meanings.length) {
                     list.push({
                         number: num,
+                        sourceFile: fileName,
                         english: parts[1],
                         meanings
                     });
@@ -1153,7 +1187,7 @@ function handleTypingAnswer(isCorrect, isNearMiss = false) {
     const dot = document.getElementById(`dot-${currentIndex}`);
     const correctMeaning = formatMeaning(entry);
     
-    const wordStat = recordWordAttempt(entry.number, isCorrect);
+    const wordStat = recordWordAttempt(getWordId(entry), isCorrect);
     graduateWeakWordIfReady(entry, wordStat, isCorrect);
     answerHistory.push({
         english: entry.english,
@@ -1198,9 +1232,11 @@ function handleTypingAnswer(isCorrect, isNearMiss = false) {
 function graduateWeakWordIfReady(entry, stat, isCorrect) {
     if (!isWeakReviewSettings || !isCorrect || !stat || stat.streak < 3) return;
     
-    removeWeakWord(entry.number);
-    if (!graduatedWeakWords.some(item => item.number === entry.number)) {
+    const wordId = getWordId(entry);
+    removeWeakWord(wordId);
+    if (!graduatedWeakWords.some(item => item.id === wordId)) {
         graduatedWeakWords.push({
+            id: wordId,
             number: entry.number,
             english: entry.english,
             meaning: formatMeaning(entry)
@@ -1237,7 +1273,7 @@ function handleVocabAnswer(idx, entry, dot) {
     const correctIdx = currentChoicesData.findIndex(c => c.entry === entry);
     const isCorrect = idx !== -1 && currentChoicesData[idx].entry === entry;
     const correctMeaning = currentChoicesData[correctIdx].display;
-    const wordStat = recordWordAttempt(entry.number, isCorrect);
+    const wordStat = recordWordAttempt(getWordId(entry), isCorrect);
     graduateWeakWordIfReady(entry, wordStat, isCorrect);
     answerHistory.push({
         english: entry.english,
@@ -1257,7 +1293,7 @@ function handleVocabAnswer(idx, entry, dot) {
             meaning: correctMeaning
         });
         if (vocabDirection === "enToJa") {
-            saveWeakWord(entry.number);
+            saveWeakWord(getWordId(entry));
         }
         if (dot) dot.classList.add("wrong");
     }
@@ -1719,7 +1755,7 @@ async function startVocabQuiz() {
             localStorage.setItem(VOCAB_DIRECTION_KEY, vocabDirection);
             localStorage.setItem(ANSWER_MODE_KEY, answerMode);
             const weakIds = getWeakWords();
-            data = data.filter(item => weakIds.some(id => String(id) === String(item.number)));
+            data = getWeakQuizEntries(data, weakIds);
             if (!data.length) throw new Error("苦手単語がありません。");
         } else {
             // 範囲フィルタ
@@ -1887,7 +1923,7 @@ async function getEntriesForWeakList() {
         try {
             const entries = await loadCsv(fileName, false, false);
             entries.forEach(entry => {
-                if (!merged.some(item => item.number === entry.number)) {
+                if (!merged.some(item => getWordId(item) === getWordId(entry))) {
                     merged.push(entry);
                 }
             });
@@ -1931,7 +1967,9 @@ async function showWeakListModal() {
     listEl.innerHTML = "";
     
     weakIds.forEach(id => {
-        const entry = visibleEntries.find(e => e.number === id);
+        const entry = isLegacyWeakWordId(id)
+            ? visibleEntries.find(e => String(e.number) === String(id))
+            : visibleEntries.find(e => getWordId(e) === String(id));
         if (entry) {
             const stat = stats[String(id)];
             const li = document.createElement("li");
@@ -1951,7 +1989,7 @@ async function showWeakListModal() {
             
             const removeBtn = document.createElement("button");
             removeBtn.textContent = "🗑️";
-            removeBtn.onclick = () => removeWeak(entry.number);
+            removeBtn.onclick = () => removeWeak(id);
             
             actions.appendChild(speakBtn);
             actions.appendChild(removeBtn);
