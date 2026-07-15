@@ -1,0 +1,452 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="夏期コマ表">
+<title>夏期講習 コマ管理</title>
+<style>
+  :root{
+    --bg:#f4f5f7; --card:#ffffff; --text:#1c1e21; --muted:#6b7280;
+    --border:#e2e4e8; --accent:#2563eb; --accent-text:#ffffff;
+    --danger:#dc2626; --input-bg:#fbfbfc;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#15171a; --card:#1f2226; --text:#eceef1; --muted:#9aa1ac;
+      --border:#31353b; --accent:#3b82f6; --accent-text:#ffffff;
+      --danger:#f87171; --input-bg:#26292e;
+    }
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--bg); color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Yu Gothic",sans-serif;
+    padding-bottom:100px;
+  }
+  header{
+    position:sticky; top:0; z-index:10; background:var(--bg);
+    padding:10px 12px 6px; border-bottom:1px solid var(--border);
+  }
+  h1{font-size:17px; margin:0 0 8px; text-align:center;}
+  .nav{
+    display:flex; align-items:center; gap:6px; justify-content:center; flex-wrap:wrap;
+  }
+  .nav button{
+    padding:9px 12px; font-size:15px; border-radius:10px; border:1px solid var(--border);
+    background:var(--card); color:var(--text);
+  }
+  .nav input[type=date]{
+    padding:9px 8px; border-radius:10px; border:1px solid var(--border);
+    background:var(--card); color:var(--text); font-size:15px;
+  }
+  .daylabel{
+    text-align:center; font-size:15px; color:var(--muted); margin:6px 0 2px;
+  }
+  main{padding:10px 12px; max-width:640px; margin:0 auto;}
+  .koma-card{
+    background:var(--card); border:1px solid var(--border); border-radius:14px;
+    padding:12px; margin-bottom:12px;
+  }
+  .koma-head{
+    display:flex; justify-content:space-between; align-items:baseline; margin-bottom:8px;
+  }
+  .koma-head .num{font-size:16px; font-weight:600;}
+  .koma-head .time{font-size:13px; color:var(--muted);}
+  textarea, input[type=text]{
+    width:100%; border:1px solid var(--border); border-radius:8px; background:var(--input-bg);
+    color:var(--text); padding:8px; font-size:15px; font-family:inherit;
+  }
+  textarea{resize:vertical; min-height:38px;}
+  .memo{margin-bottom:8px;}
+  .memo textarea{min-height:34px;}
+  .student-row{
+    display:flex; gap:6px; align-items:flex-start; margin-bottom:6px; padding-top:6px;
+    border-top:1px dashed var(--border);
+  }
+  .student-row .name{flex:0 0 88px;}
+  .student-row .task{flex:1;}
+  .student-row button{
+    flex:0 0 auto; background:none; border:none; color:var(--danger); font-size:20px;
+    padding:2px 4px; line-height:1;
+  }
+  .add-student{
+    margin-top:4px; width:100%; padding:8px; border-radius:8px; border:1px dashed var(--border);
+    background:none; color:var(--accent); font-size:14px;
+  }
+  .toolbar{
+    position:fixed; bottom:0; left:0; right:0; background:var(--card);
+    border-top:1px solid var(--border); padding:8px 10px; display:flex; gap:8px;
+    justify-content:center; flex-wrap:wrap;
+  }
+  .toolbar button{
+    padding:9px 12px; border-radius:10px; border:1px solid var(--border);
+    background:var(--bg); color:var(--text); font-size:14px;
+  }
+  .toolbar button.primary{background:var(--accent); color:var(--accent-text); border-color:var(--accent);}
+  #fileInput{display:none;}
+  .overlay{
+    position:fixed; inset:0; background:rgba(0,0,0,.4); z-index:50;
+    display:flex; align-items:flex-end; justify-content:center;
+  }
+  .overlay.hidden{display:none;}
+  .sheet{
+    background:var(--card); width:100%; max-width:640px; max-height:80vh; overflow-y:auto;
+    border-radius:16px 16px 0 0; padding:14px;
+  }
+  .sheet h2{font-size:16px; margin:0 0 10px;}
+  .sheet input[type=text]{margin-bottom:10px;}
+  .result-item{
+    padding:8px 4px; border-bottom:1px solid var(--border); font-size:14px;
+  }
+  .result-item b{font-size:14px;}
+  .result-item .meta{color:var(--muted); font-size:12px;}
+  .close-sheet{
+    display:block; width:100%; margin-top:10px; padding:10px; border-radius:10px;
+    border:1px solid var(--border); background:var(--bg); color:var(--text);
+  }
+  .status{
+    text-align:center; font-size:12px; color:var(--muted); padding:4px 0 0;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>夏期講習 コマ管理表</h1>
+  <div class="nav">
+    <button id="prevDay">◀ 前日</button>
+    <input type="date" id="datePicker">
+    <button id="nextDay">翌日 ▶</button>
+    <button id="todayBtn">今日</button>
+  </div>
+  <div class="daylabel" id="dayLabel"></div>
+</header>
+
+<main id="komaList"></main>
+
+<div class="toolbar">
+  <button id="searchBtn">🔍 生徒検索</button>
+  <button id="exportBtn">書き出し</button>
+  <button id="importBtn">読み込み</button>
+  <button class="primary" id="saveNowBtn">保存する</button>
+</div>
+<input type="file" id="fileInput" accept="application/json">
+<div class="status" id="statusMsg" style="position:fixed; bottom:52px; left:0; right:0;"></div>
+
+<div class="overlay hidden" id="searchOverlay">
+  <div class="sheet">
+    <h2>生徒名で検索</h2>
+    <input type="text" id="searchInput" placeholder="例: 川田">
+    <div id="searchResults"></div>
+    <button class="close-sheet" id="closeSearch">閉じる</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  // ---- 期間・コマ時間の設定（必要ならここを編集） ----
+  var START_DATE = "2026-07-15";
+  var END_DATE   = "2026-08-31";
+  var KOMA_TIMES = {
+    1: ["09:50","11:10"], 2: ["11:20","12:40"], 3: ["12:50","14:10"], 4: ["14:20","15:40"],
+    5: ["15:50","17:10"], 6: ["17:20","18:40"], 7: ["18:50","20:10"], 8: ["20:20","21:40"]
+  };
+  var STORAGE_KEY = "summerScheduleData_v1";
+  var WEEKDAY_JP = ["日","月","火","水","木","金","土"];
+
+  var data = loadData();
+  var currentDate = clampToRange(todayStr());
+
+  var datePicker = document.getElementById("datePicker");
+  var dayLabel = document.getElementById("dayLabel");
+  var komaList = document.getElementById("komaList");
+  var statusMsg = document.getElementById("statusMsg");
+  var saveTimer = null;
+
+  datePicker.min = START_DATE;
+  datePicker.max = END_DATE;
+  datePicker.value = currentDate;
+
+  document.getElementById("prevDay").addEventListener("click", function(){ shiftDay(-1); });
+  document.getElementById("nextDay").addEventListener("click", function(){ shiftDay(1); });
+  document.getElementById("todayBtn").addEventListener("click", function(){
+    currentDate = clampToRange(todayStr());
+    datePicker.value = currentDate;
+    render();
+  });
+  datePicker.addEventListener("change", function(){
+    if(datePicker.value){ currentDate = datePicker.value; render(); }
+  });
+  document.getElementById("saveNowBtn").addEventListener("click", function(){
+    saveData();
+    flashStatus("保存しました");
+  });
+  document.getElementById("exportBtn").addEventListener("click", exportData);
+  document.getElementById("importBtn").addEventListener("click", function(){
+    document.getElementById("fileInput").click();
+  });
+  document.getElementById("fileInput").addEventListener("change", importData);
+  document.getElementById("searchBtn").addEventListener("click", openSearch);
+  document.getElementById("closeSearch").addEventListener("click", closeSearch);
+  document.getElementById("searchInput").addEventListener("input", runSearch);
+
+  render();
+
+  function todayStr(){
+    var d = new Date();
+    return d.getFullYear() + "-" + pad(d.getMonth()+1) + "-" + pad(d.getDate());
+  }
+  function pad(n){ return n < 10 ? "0"+n : ""+n; }
+
+  function clampToRange(dateStr){
+    if(dateStr < START_DATE) return START_DATE;
+    if(dateStr > END_DATE) return END_DATE;
+    return dateStr;
+  }
+
+  function addDays(dateStr, delta){
+    var parts = dateStr.split("-").map(Number);
+    var d = new Date(parts[0], parts[1]-1, parts[2]);
+    d.setDate(d.getDate() + delta);
+    return d.getFullYear() + "-" + pad(d.getMonth()+1) + "-" + pad(d.getDate());
+  }
+
+  function shiftDay(delta){
+    var next = addDays(currentDate, delta);
+    if(next < START_DATE || next > END_DATE) return;
+    currentDate = next;
+    datePicker.value = currentDate;
+    render();
+  }
+
+  function loadData(){
+    try{
+      var raw = localStorage.getItem(STORAGE_KEY);
+      return raw ? JSON.parse(raw) : {};
+    }catch(e){ return {}; }
+  }
+
+  function saveData(){
+    try{
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    }catch(e){
+      flashStatus("保存に失敗しました（容量不足の可能性）");
+    }
+  }
+
+  function scheduleSave(){
+    if(saveTimer) clearTimeout(saveTimer);
+    saveTimer = setTimeout(function(){ saveData(); flashStatus("自動保存しました"); }, 600);
+  }
+
+  function flashStatus(msg){
+    statusMsg.textContent = msg;
+    setTimeout(function(){ statusMsg.textContent = ""; }, 1800);
+  }
+
+  function getDayData(dateStr){
+    if(!data[dateStr]){
+      data[dateStr] = { memo: {}, students: {} };
+    }
+    if(!data[dateStr].memo) data[dateStr].memo = {};
+    if(!data[dateStr].students) data[dateStr].students = {};
+    return data[dateStr];
+  }
+
+  function render(){
+    var parts = currentDate.split("-").map(Number);
+    var d = new Date(parts[0], parts[1]-1, parts[2]);
+    dayLabel.textContent = parts[0] + "年" + parts[1] + "月" + parts[2] + "日（" + WEEKDAY_JP[d.getDay()] + "）";
+
+    var day = getDayData(currentDate);
+    komaList.innerHTML = "";
+
+    for(var k = 1; k <= 8; k++){
+      komaList.appendChild(renderKomaCard(day, k));
+    }
+  }
+
+  function renderKomaCard(day, k){
+    var card = document.createElement("div");
+    card.className = "koma-card";
+
+    var head = document.createElement("div");
+    head.className = "koma-head";
+    head.innerHTML = "<span class='num'>" + k + "コマ</span><span class='time'>" +
+      KOMA_TIMES[k][0] + " – " + KOMA_TIMES[k][1] + "</span>";
+    card.appendChild(head);
+
+    var memoWrap = document.createElement("div");
+    memoWrap.className = "memo";
+    var memoTa = document.createElement("textarea");
+    memoTa.placeholder = "全体メモ（教材・持ち物など）";
+    memoTa.value = day.memo[k] || "";
+    memoTa.addEventListener("input", function(){
+      day.memo[k] = memoTa.value;
+      scheduleSave();
+    });
+    memoWrap.appendChild(memoTa);
+    card.appendChild(memoWrap);
+
+    if(!day.students[k]) day.students[k] = [];
+    var rowsWrap = document.createElement("div");
+    rowsWrap.className = "rows";
+    card.appendChild(rowsWrap);
+
+    function renderRows(){
+      rowsWrap.innerHTML = "";
+      day.students[k].forEach(function(entry, idx){
+        rowsWrap.appendChild(renderStudentRow(day, k, idx, entry, renderRows));
+      });
+    }
+    renderRows();
+
+    var addBtn = document.createElement("button");
+    addBtn.className = "add-student";
+    addBtn.textContent = "＋ 生徒を追加";
+    addBtn.addEventListener("click", function(){
+      day.students[k].push({ name: "", task: "" });
+      renderRows();
+      scheduleSave();
+    });
+    card.appendChild(addBtn);
+
+    return card;
+  }
+
+  function renderStudentRow(day, k, idx, entry, refresh){
+    var row = document.createElement("div");
+    row.className = "student-row";
+
+    var nameInput = document.createElement("input");
+    nameInput.type = "text";
+    nameInput.className = "name";
+    nameInput.placeholder = "生徒名";
+    nameInput.value = entry.name;
+    nameInput.addEventListener("input", function(){
+      entry.name = nameInput.value;
+      scheduleSave();
+    });
+
+    var taskInput = document.createElement("textarea");
+    taskInput.className = "task";
+    taskInput.placeholder = "やること（例: 文法演習 仮定法）";
+    taskInput.value = entry.task;
+    taskInput.addEventListener("input", function(){
+      entry.task = taskInput.value;
+      scheduleSave();
+    });
+
+    var delBtn = document.createElement("button");
+    delBtn.textContent = "×";
+    delBtn.addEventListener("click", function(){
+      day.students[k].splice(idx, 1);
+      refresh();
+      scheduleSave();
+    });
+
+    row.appendChild(nameInput);
+    row.appendChild(taskInput);
+    row.appendChild(delBtn);
+    return row;
+  }
+
+  function exportData(){
+    saveData();
+    var blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    var stamp = todayStr();
+    a.href = url;
+    a.download = "summer-schedule-backup-" + stamp + ".json";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 2000);
+    flashStatus("書き出しました（共有シートから保存してください）");
+  }
+
+  function importData(e){
+    var file = e.target.files[0];
+    if(!file) return;
+    var reader = new FileReader();
+    reader.onload = function(){
+      try{
+        var parsed = JSON.parse(reader.result);
+        if(!confirm("現在のデータを読み込んだ内容で上書きします。よろしいですか？")) return;
+        data = parsed;
+        saveData();
+        render();
+        flashStatus("読み込みました");
+      }catch(err){
+        alert("読み込みに失敗しました。ファイルの内容を確認してください。");
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = "";
+  }
+
+  function openSearch(){
+    document.getElementById("searchOverlay").classList.remove("hidden");
+    document.getElementById("searchInput").value = "";
+    document.getElementById("searchResults").innerHTML = "";
+    document.getElementById("searchInput").focus();
+  }
+  function closeSearch(){
+    document.getElementById("searchOverlay").classList.add("hidden");
+  }
+  function runSearch(){
+    var q = document.getElementById("searchInput").value.trim();
+    var resultsEl = document.getElementById("searchResults");
+    resultsEl.innerHTML = "";
+    if(!q) return;
+    var dates = Object.keys(data).sort();
+    var found = [];
+    dates.forEach(function(dateStr){
+      var day = data[dateStr];
+      if(!day.students) return;
+      Object.keys(day.students).forEach(function(k){
+        day.students[k].forEach(function(entry){
+          if(entry.name && entry.name.indexOf(q) !== -1){
+            found.push({ date: dateStr, koma: k, name: entry.name, task: entry.task });
+          }
+        });
+      });
+    });
+    if(found.length === 0){
+      resultsEl.innerHTML = "<div class='result-item'>該当なし</div>";
+      return;
+    }
+    found.forEach(function(item){
+      var div = document.createElement("div");
+      div.className = "result-item";
+      div.innerHTML = "<b>" + item.date + " / " + item.koma + "コマ / " + escapeHtml(item.name) +
+        "</b><br>" + escapeHtml(item.task || "（内容未記入）");
+      div.style.cursor = "pointer";
+      div.addEventListener("click", function(){
+        currentDate = item.date;
+        datePicker.value = currentDate;
+        render();
+        closeSearch();
+      });
+      resultsEl.appendChild(div);
+    });
+  }
+
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, function(c){
+      return { "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c];
+    });
+  }
+
+  window.addEventListener("beforeunload", saveData);
+})();
+</script>
+</body>
+</html>
